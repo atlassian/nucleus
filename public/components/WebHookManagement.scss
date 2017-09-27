@@ -1,0 +1,58 @@
+.container {
+  margin-top: 16px;
+
+  .createWebHookContainer {
+    display: flex;
+  
+    .createWebHookInput {
+      flex: 1;
+      display: flex;
+
+      > div {
+        flex: 1;
+        padding-right: 16px;
+
+        > div {
+          width: 100%;
+        }
+      }
+    }
+  
+    .createWebHookButton {
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 4px;
+    }
+  }
+  
+  .webHookList {
+    margin-top: 8px;
+  
+    .webHook {
+      padding: 2px 8px;
+      display: flex;
+      align-items: center;
+  
+      > :first-child {
+        margin-left: 0;
+        margin-right: 8px;
+      }
+  
+      > .url {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+  
+      > :not(.url) {
+        margin-left: 8px;
+      }
+    }
+  }
+  
+  .verticalSpinner {
+    display: flex;
+    width: 53.19px;
+    justify-content: center;
+  }
+}

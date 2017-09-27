@@ -1,0 +1,20 @@
+.spinnerContainer {
+    position: fixed;
+    z-index: 999;
+    background: rgba(255, 255, 255, 0.7);
+    top: 0;
+    left: 304px;
+    width: calc(100vw - 304px);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s linear;
+
+    &.visible {
+        opacity: 1;
+        pointer-events: all;
+    }
+}

@@ -1,0 +1,17 @@
+.pageWrapper {
+  display: flex;
+
+  .navContainer {
+    a, a:hover {
+      text-decoration: none;
+    }
+    flex: 0;
+  }
+
+  .pageContainer {
+    flex: 1;
+    padding: 16px;
+    width: calc(100vw - 304px);
+    box-sizing: border-box;
+  }
+}

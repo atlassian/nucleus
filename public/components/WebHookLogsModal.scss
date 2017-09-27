@@ -1,0 +1,9 @@
+.error {
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 12px;
+
+  &:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}

@@ -1,0 +1,13 @@
+.files
+.vscode
+.git
+node_modules
+public
+scripts
+src
+typings
+uploader
+/config.js
+/config.*.js
+*.sh
+*.yml

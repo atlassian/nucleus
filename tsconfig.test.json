@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es6",
+		"outDir": "test_out",
+		"lib": [
+			"es6",
+			"dom"
+		],
+		"sourceMap": true,
+		"jsx": "react",
+		"experimentalDecorators": true
+	},
+	"exclude": [
+		"node_modules",
+		"public"
+	]
+}

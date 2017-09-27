@@ -1,0 +1,71 @@
+import { expect } from 'chai';
+import * as fs from 'fs-extra';
+import * as os from 'os';
+import * as path from 'path';
+import { stub } from 'sinon';
+
+import * as config from '../../config';
+import LocalStore from '../local/LocalStore';
+
+describe('LocalStore', () => {
+  let dir: string;
+  let store: LocalStore;
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(os.tmpdir());
+    (config as any).local = {
+      root: dir,
+      staticUrl: 'https://static.url.com/thing',
+    };
+    store = new LocalStore();
+  });
+
+  afterEach(async () => {
+    await fs.remove(dir);
+  });
+
+  describe('getPublicBaseUrl', () => {
+    it('should return the staticUrl config property', async () => {
+      expect(await store.getPublicBaseUrl()).to.equal('https://static.url.com/thing');
+    });
+  });
+
+  describe('putFile', () => {
+    it('should write files to the correct directory', async () => {
+      await store.putFile('key', Buffer.from('value'));
+      expect(await fs.readFile(path.resolve(dir, 'key'), 'utf8')).to.equal('value');
+    });
+
+    it('should not overwrite files by default', async () => {
+      expect(await store.putFile('key', Buffer.from('value'))).to.equal(true);
+      expect(await fs.readFile(path.resolve(dir, 'key'), 'utf8')).to.equal('value');
+      expect(await store.putFile('key', Buffer.from('value2'))).to.equal(false);
+      expect(await fs.readFile(path.resolve(dir, 'key'), 'utf8')).to.equal('value');
+    });
+
+    it('should overwrite files when overwrite = true', async () => {
+      expect(await store.putFile('key', Buffer.from('value'))).to.equal(true);
+      expect(await fs.readFile(path.resolve(dir, 'key'), 'utf8')).to.equal('value');
+      expect(await store.putFile('key', Buffer.from('value2'), true)).to.equal(true);
+      expect(await fs.readFile(path.resolve(dir, 'key'), 'utf8')).to.equal('value2');
+    });
+
+    it('should write to deep keys', async () => {
+      expect(await store.putFile('key/goes/super/duper/deep', Buffer.from('deepValue'))).to.equal(true);
+      expect(await fs.readFile(
+        path.resolve(dir, 'key', 'goes', 'super', 'duper', 'deep'),
+        'utf8',
+      )).to.equal('deepValue');
+    });
+  });
+
+  describe('getFile', () => {
+    it('should default to empty string buffer', async () => {
+      expect((await store.getFile('key')).toString()).to.equal('');
+    });
+
+    it('should load the file contents if it exists', async () => {
+      await store.putFile('key', Buffer.from('existing'));
+      expect((await store.getFile('key')).toString()).to.equal('existing');
+    });
+  });
+});

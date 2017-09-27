@@ -1,0 +1,14 @@
+lib
+node_modules
+.filestore
+npm-debug.log*
+config.js
+config.*.js
+!config.template.js
+certs
+.vscode
+public_out
+*.log
+.files
+test_out
+db.sqlite

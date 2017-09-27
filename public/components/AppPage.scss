@@ -1,0 +1,54 @@
+.tokenContainer {
+  width: 100%;
+
+  > div {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .token {
+    width: 100%;
+    border: 0;
+    background: none;
+    outline: 0;
+    font-size: 14px;
+  }
+}
+
+.tab {
+  flex: 1;
+  width: 100%;
+
+  h5 {
+    margin-top: 16px !important;
+    margin-bottom: 8px;
+  }
+}
+
+.codeCard {
+  box-sizing: border-box;
+  padding: 10px 15px;
+  border-radius: 3px;
+  color: inherit;
+  box-shadow: 0 4px 8px -2px rgba(9,30,66,.28), 0 0 1px rgba(9,30,66,.3);
+  margin: 16px 0 8px 0;
+  width: 100%;
+}
+
+.notFound {
+  text-align: center;
+  height: calc(100vh - 96px);
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+
+  h1 {
+    font-size: 144px;
+  }
+
+  h3 {
+    font-size: 72px;
+  }
+}

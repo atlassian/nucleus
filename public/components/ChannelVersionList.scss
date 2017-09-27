@@ -1,0 +1,77 @@
+.versionSelect {
+  box-sizing: border-box;
+  padding: 10px 15px;
+  border-radius: 3px;
+  color: inherit;
+  -webkit-box-shadow: 0 4px 8px -2px rgba(9, 30, 66, 0.28), 0 0 1px rgba(9, 30, 66, 0.3);
+  box-shadow: 0 4px 8px -2px rgba(9, 30, 66, 0.28), 0 0 1px rgba(9, 30, 66, 0.3);
+  margin: 16px 8px 8px 8px;
+  width: calc(20% - 16px);
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s linear, color 0.2s linear;
+  background: transparent;
+  color: black;
+  display: inline-block;
+
+  &:hover {
+    background: #0F4AA3;
+    color: white;
+  }
+}
+
+.fileDownloadContainer {
+  display: inline-block;
+  width: 50%;
+  padding: 8px;
+  box-sizing: border-box;
+
+  .fileDownload {
+    color: #172B4D;
+    background-color: #F4F5F7;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(9, 30, 66, 0.2), 0 0 1px 0 rgba(9, 30, 66, 0.24);
+    transition: background-color 0.2s linear;
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgb(228, 228, 228);
+    }
+
+    .fileName {
+      height: 24px;
+      margin: 16px 16px 12px 16px;
+      color: #091E42;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 100%;
+      display: flex;
+      align-items: center;
+
+      > span {
+        margin-right: 8px;
+      }
+
+      > div {
+        max-width: calc(100% - 40px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .fileInfo {
+      color: #5E6C84;
+      height: 24px;
+      margin: 0 8px 12px 16px;
+
+      > span {
+        margin-right: 12px;
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+.files
+.vscode
+.git
+lib
+public_out
+scripts
+*.log
+uploader

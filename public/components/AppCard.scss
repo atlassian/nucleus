@@ -1,0 +1,33 @@
+.appContainer {
+  float: left;
+  width: 33.33%;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  height: 255px;
+
+  .app {
+    height: 256px;
+    box-sizing: border-box;
+    padding: 10px 15px;
+    border-radius: 3px;
+    color: inherit;
+    cursor: pointer;
+    height: 100%;
+    box-shadow: 0 4px 8px -2px rgba(9,30,66,.28), 0 0 1px rgba(9,30,66,.3);
+
+    &:hover {
+      background: #f4f5f7;
+    }
+
+    > img {
+      width: 40%;
+      margin-left: 30%;
+      margin-top: 24px;
+    }
+
+    > h4 {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+  }
+}
