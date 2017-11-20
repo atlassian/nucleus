@@ -1,6 +1,6 @@
 # Nucleus Server
 
-![status](https://img.shields.io/badge/Status-%20Ready%20for%20Awesome-red.svg)
+[![Build Status](https://travis-ci.org/atlassian/nucleus.svg?branch=enable-travis)](https://travis-ci.org/atlassian/nucleus) [![npm](https://img.shields.io/npm/v/nucleus-server.svg)](https://www.npmjs.com/package/nucleus-server) ![status](https://img.shields.io/badge/Status-%20Ready%20for%20Awesome-red.svg)
 
 A configurable and versatile update server for all your Electron apps
 

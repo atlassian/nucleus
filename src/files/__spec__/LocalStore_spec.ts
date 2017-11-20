@@ -11,7 +11,7 @@ describe('LocalStore', () => {
   let dir: string;
   let store: LocalStore;
   beforeEach(async () => {
-    dir = await fs.mkdtemp(os.tmpdir());
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
     (config as any).local = {
       root: dir,
       staticUrl: 'https://static.url.com/thing',

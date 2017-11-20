@@ -11,6 +11,13 @@ const loaders = require('./webpack.loaders');
 const HOST = process.env.NUCLEUS_HOST || '127.0.0.1';
 const PORT = process.env.NUCLEUS_HOST || '8888';
 
+let mainPort = 3030;
+try {
+  mainPort = require('./config.js').port
+} catch (err) {
+
+}
+
 module.exports = {
   entry: [
     'react-hot-loader/patch',
@@ -41,7 +48,7 @@ module.exports = {
     port: PORT,
     host: HOST,
     proxy: {
-      '/rest': `http://localhost:${require('./config.js').port}`
+      '/rest': `http://localhost:${mainPort}`
     }
   },
   plugins: [
