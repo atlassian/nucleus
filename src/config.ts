@@ -7,11 +7,16 @@ const d = debug('nucleus:config');
 let config: IConfig = <any>{};
 
 try {
-  let configPath = '../config.js';
   if (process.argv.length > 2) {
-    configPath = path.resolve(process.cwd(), process.argv[2]);
+    try {
+      config = require(path.resolve(process.cwd(), process.argv[2]));
+    } catch (err) {
+      // Ignore
+    }
   }
-  config =  require(configPath);
+  if (!config) {
+    config =  require('../config.js');
+  }
 } catch (err) {
   console.error('Could not locate config.js file, please ensure it exists');
   process.exit(1);
