@@ -4,7 +4,7 @@ import * as NodeRsa from 'node-rsa';
 import * as path from 'path';
 
 const d = debug('nucleus:config');
-let config: IConfig = <any>{};
+let config: IConfig;
 
 try {
   if (process.argv.length > 2) {
