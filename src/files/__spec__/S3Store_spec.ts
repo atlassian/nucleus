@@ -6,7 +6,6 @@ import * as os from 'os';
 import * as path from 'path';
 import { createStubInstance, stub, SinonStubbedInstance, SinonSpy } from 'sinon';
 
-import * as config from '../../config';
 import S3Store from '../s3/S3Store';
 
 describe('S3Store', () => {
@@ -17,13 +16,15 @@ describe('S3Store', () => {
   /* tslint:enable */
   let s3Watcher: EventEmitter;
   let cloudFrontWatcher: EventEmitter;
+  let s3Config: S3Options;
 
 
   beforeEach(async () => {
-    (config as any).s3 = {
+    s3Config = {
       bucketName: 'myBucket',
+      cloudfront: null,
     };
-    store = new S3Store();
+    store = new S3Store(s3Config);
     S3 = AWS.S3;
     CloudFront = AWS.CloudFront;
     s3Watcher = new EventEmitter();
@@ -57,12 +58,12 @@ describe('S3Store', () => {
     });
 
     it('should return the cloudfront static URL if provided', async () => {
-      config.s3.cloudfront = {
+      s3Config.cloudfront = {
         distributionId: '0',
         publicUrl: 'https://this.is.custom/lel',
       };
       expect(await store.getPublicBaseUrl()).to.equal('https://this.is.custom/lel');
-      delete config.s3.cloudfront;
+      delete s3Config.cloudfront;
     });
   });
 
@@ -119,7 +120,7 @@ describe('S3Store', () => {
     });
 
     it('should trigger a cloudFront invalidation if cloudFront settings are set', async () => {
-      config.s3.cloudfront = {
+      s3Config.cloudfront = {
         distributionId: '0id',
         publicUrl: 'https://this.is.custom/lel',
       };
@@ -139,7 +140,7 @@ describe('S3Store', () => {
       expect(invalidateOptions).to.have.property('DistributionId', '0id');
       expect(invalidateOptions.InvalidationBatch.Paths.Quantity).to.equal(1);
       expect(invalidateOptions.InvalidationBatch.Paths.Items).to.deep.equal(['/myKey']);
-      delete config.s3.cloudfront;
+      delete s3Config.cloudfront;
     });
   });
 

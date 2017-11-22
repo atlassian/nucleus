@@ -4,8 +4,10 @@ import * as path from 'path';
 import * as config from '../../config';
 
 export default class LocalStore implements IFileStore {
+  constructor(private localConfig = config.local) {}
+
   private getPath(key: string) {
-    return path.resolve(config.local.root, key);
+    return path.resolve(this.localConfig.root, key);
   }
 
   public async putFile(key: string, data: Buffer, overwrite = false) {
@@ -31,6 +33,6 @@ export default class LocalStore implements IFileStore {
   }
 
   public async getPublicBaseUrl() {
-    return config.local.staticUrl;
+    return this.localConfig.staticUrl;
   }
 }

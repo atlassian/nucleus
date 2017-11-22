@@ -4,19 +4,20 @@ import * as os from 'os';
 import * as path from 'path';
 import { stub } from 'sinon';
 
-import * as config from '../../config';
 import LocalStore from '../local/LocalStore';
 
 describe('LocalStore', () => {
   let dir: string;
   let store: LocalStore;
+  let localConfig: LocalOptions;
+
   beforeEach(async () => {
     dir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
-    (config as any).local = {
+    localConfig = {
       root: dir,
       staticUrl: 'https://static.url.com/thing',
     };
-    store = new LocalStore();
+    store = new LocalStore(localConfig);
   });
 
   afterEach(async () => {

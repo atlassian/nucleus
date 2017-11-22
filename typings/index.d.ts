@@ -18,7 +18,7 @@ interface S3Options {
   cloudfront: {
     distributionId: string;
     publicUrl: string;
-  }
+  } | null
 }
 
 interface LocalOptions {

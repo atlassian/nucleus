@@ -14,11 +14,13 @@ AWS.config.credentials = new AWS.EC2MetadataCredentials({
 });
 
 export default class S3Store implements IFileStore {
+  constructor(private s3Config = config.s3) {}
+
   public async putFile(key: string, data: Buffer, overwrite = false) {
     d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
     const s3 = new AWS.S3();
     const keyExists = async () => await new Promise<boolean>(resolve => s3.headObject({
-      Bucket: config.s3.bucketName,
+      Bucket: this.s3Config.bucketName,
       Key: key,
     }, (err) => {
       if (err && err.code === 'NotFound') return resolve(false);
@@ -28,7 +30,7 @@ export default class S3Store implements IFileStore {
     if (overwrite || !await keyExists()) {
       d(`Deciding to write file (either because overwrite is enabled or the key didn't exist)`);
       await new Promise((resolve, reject) => s3.putObject({
-        Bucket: config.s3.bucketName,
+        Bucket: this.s3Config.bucketName,
         Key: key,
         Body: data,
         ACL: 'public-read',
@@ -38,11 +40,11 @@ export default class S3Store implements IFileStore {
       }));
       wrote = true;
     }
-    if (overwrite && config.s3.cloudfront) {
+    if (overwrite && this.s3Config.cloudfront) {
       d(`Cloudfront config detected, sending invalidation request for: '${key}'`);
       const cloudFront = new AWS.CloudFront();
       cloudFront.createInvalidation({
-        DistributionId: config.s3.cloudfront.distributionId,
+        DistributionId: this.s3Config.cloudfront.distributionId,
         InvalidationBatch: {
           CallerReference: hat(),
           Paths: {
@@ -62,7 +64,7 @@ export default class S3Store implements IFileStore {
     return await new Promise<Buffer>((resolve) => {
       const s3 = new AWS.S3();
       s3.getObject({
-        Bucket: config.s3.bucketName,
+        Bucket: this.s3Config.bucketName,
         Key: key,
       }, (err, data) => {
         if (err) {
@@ -79,7 +81,7 @@ export default class S3Store implements IFileStore {
     const s3 = new AWS.S3();
     const objects = await new Promise<AWS.S3.Object[]>((resolve) => {
       s3.listObjects({
-        Bucket: config.s3.bucketName,
+        Bucket: this.s3Config.bucketName,
         Prefix: key,
       }, (err, data) => {
         resolve(data.Contents);
@@ -88,7 +90,7 @@ export default class S3Store implements IFileStore {
     d(`Found objects to delete: [${objects.map(object => object.Key).join(', ')}]`);
     await new Promise((resolve) => {
       s3.deleteObjects({
-        Bucket: config.s3.bucketName,
+        Bucket: this.s3Config.bucketName,
         Delete: {
           Objects: objects.map(object => ({
             Key: object.Key,
@@ -99,9 +101,9 @@ export default class S3Store implements IFileStore {
   }
 
   public async getPublicBaseUrl() {
-    if (config.s3.cloudfront) {
-      return config.s3.cloudfront.publicUrl;
+    if (this.s3Config.cloudfront) {
+      return this.s3Config.cloudfront.publicUrl;
     }
-    return `https://${config.s3.bucketName}.s3.amazonaws.com`;
+    return `https://${this.s3Config.bucketName}.s3.amazonaws.com`;
   }
 }
