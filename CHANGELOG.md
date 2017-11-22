@@ -1,3 +1,9 @@
+#### 0.0.4 (2017-11-22)
+
+##### Bug Fixes
+
+* **core-platform:** fix config not loading in development (661280a2)
+
 #### 0.0.3 (2017-11-22)
 
 ##### Chores
