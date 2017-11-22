@@ -1,6 +1,6 @@
 {
   "name": "nucleus-server",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Nucleus update server",
   "main": "lib/index.js",
   "bin": {
