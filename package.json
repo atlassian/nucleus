@@ -27,6 +27,7 @@
   "author": "Samuel Attard",
   "license": "Apache-2.0",
   "dependencies": {
+    "@mapbox/safer-stringify": "^0.0.2",
     "aws-sdk": "^2.119.0",
     "body-parser": "^1.17.2",
     "compression": "^1.7.1",

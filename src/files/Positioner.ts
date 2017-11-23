@@ -1,3 +1,4 @@
+import * as saferStringify from '@mapbox/safer-stringify';
 import * as crypto from 'crypto';
 import * as debug from 'debug';
 import * as path from 'path';
@@ -105,7 +106,7 @@ export default class Positioner {
             url: `${await this.store.getPublicBaseUrl()}/${key}`,
           },
         });
-        await this.store.putFile(releasesKey, Buffer.from(JSON.stringify(releasesJson, null, 2), 'utf8'), true);
+        await this.store.putFile(releasesKey, Buffer.from(saferStringify(releasesJson, null, 2), 'utf8'), true);
       }
     }
   }
