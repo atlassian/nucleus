@@ -102,7 +102,7 @@ export default class Positioner {
             pub_date: (new Date()).toString(),
             notes: '',
             name: version,
-            url: `${await this.store.getPublicBaseUrl()}/${key}`,
+            url: encodeURI(`${await this.store.getPublicBaseUrl()}/${key}`),
           },
         });
         await this.store.putFile(releasesKey, Buffer.from(JSON.stringify(releasesJson, null, 2), 'utf8'), true);
