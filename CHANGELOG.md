@@ -1,3 +1,10 @@
+#### 0.0.5 (2017-11-23)
+
+##### Bug Fixes
+
+* **core-platform:** encode URIs in the darwin JSON file (53745606)
+* **public:** fix My Applications link in user menu (56bc7238)
+
 #### 0.0.4 (2017-11-22)
 
 ##### Bug Fixes
