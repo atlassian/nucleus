@@ -318,6 +318,10 @@
     babel-runtime "^6.11.6"
     styled-components "^1.4.6"
 
+"@mapbox/safer-stringify@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@mapbox/safer-stringify/-/safer-stringify-0.0.2.tgz#64267e5d29e8267444f7b1eca23d14a4ea8c25f9"
+
 "@types/aws-sdk@^2.7.0":
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/@types/aws-sdk/-/aws-sdk-2.7.0.tgz#83588b3d14ebdca1d4ce5e023387577568ce82f3"
