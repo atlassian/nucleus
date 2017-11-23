@@ -36,7 +36,7 @@ class PageWrapper extends React.PureComponent<PageWrapperReduxProps & PageWrappe
   signedInSecondaryActions() {
     const photoUrl = (this.props.user.user.photos && this.props.user.user.photos.length > 0) ? this.props.user.user.photos[0].value : '';
     return [
-      <UserDropDown user={this.props.user.user}>
+      <UserDropDown user={this.props.user.user} history={this.props.history} location={this.props.location}>
         <AkGlobalItem size="small"><AkAvatar size="small" src={photoUrl} /></AkGlobalItem>
       </UserDropDown>,
     ];

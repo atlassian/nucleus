@@ -15,7 +15,12 @@ class UserDropDown extends React.PureComponent<RouteComponentProps<void, void> &
   }
 
   private goToApps = () => {
-    this.props.history.push('/apps');
+    if (this.props.location.pathname !== '/apps') {
+      this.props.history.push('/apps');
+    }
+    this.setState({
+      open: false,
+    });
   }
 
   private openChange = (attrs) => {
