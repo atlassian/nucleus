@@ -213,16 +213,16 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       this.setState({
         killing: true,
       });
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json');
       const response = await fetch(`/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/dead`, {
+        headers,
         credentials: 'include',
         method: 'POST',
         body: JSON.stringify({
           version: this.state.modalVersion.version.name,
           dead: !this.state.modalVersion.version.dead,
         }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
       await this.props.updateApps(false);
       this.setState({
@@ -239,7 +239,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       appearance = 'help';
       text = 'Revive';
     }
-    return <AkButton appearance={appearance} onClick={this.toggleVersionDeath} isDisabled={this.state.killing}>{text}</AkButton>;
+    return <AkButton appearance={appearance as any} onClick={this.toggleVersionDeath} isDisabled={this.state.killing}>{text}</AkButton>;
   }
 
   render() {
@@ -247,7 +247,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       return <AkSpinner size={40} />;
     }
     let foundIndex = -1;
-    this.props.channel.versions.find((version, index) => {
+    this.props.channel.versions.forEach((version, index) => {
       if (this.state.modalVersion && version.name === this.state.modalVersion.version.name) {
         foundIndex = index;
       }
