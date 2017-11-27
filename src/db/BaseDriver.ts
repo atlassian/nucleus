@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as semver from 'semver';
 
 import store from '../files/store';
 
@@ -33,6 +34,12 @@ export default abstract class BaseDriver extends IDBDriver {
 
   protected sluggify(name: string) {
     return name.replace(/ /g, '-').replace(/\//, '-');
+  }
+
+  protected orderVersions(versions: NucleusVersion[]) {
+    return ([] as NucleusVersion[]).concat(versions).sort((a, b) => {
+      return semver.compare(a.name, b.name);
+    });
   }
 
   /**

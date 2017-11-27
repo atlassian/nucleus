@@ -120,7 +120,7 @@ export default class SequelizeDriver extends BaseDriver {
     const newChannel: NucleusChannel = {} as any;
     newChannel.id = channel.stringId;
     newChannel.name = channel.name;
-    newChannel.versions = (channel.versions || []).map(v => v.get()).map(version => ({
+    newChannel.versions = this.orderVersions((channel.versions || []).map(v => v.get()).map(version => ({
       name: version.name,
       dead: version.dead,
       files: (version.files || []).map(f => f.get()).map(file => ({
@@ -129,7 +129,7 @@ export default class SequelizeDriver extends BaseDriver {
         platform: file.platform as NucleusPlatform,
         type: file.type as FileType,
       })),
-    }));
+    })));
     return newChannel;
   }
 
