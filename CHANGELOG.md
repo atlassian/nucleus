@@ -1,3 +1,17 @@
+### 0.1.0 (2017-11-27)
+
+##### New Features
+
+* **core-platform:**
+  * write dead/revived changes to the versions file so apps can poll for changes (9864701d)
+  * add ability to declare some versions as "dead" (0df3e748)
+
+##### Bug Fixes
+
+* **public:**
+  * fix linting issues in death logic (12ceeeea)
+  * order versions correctly, regardless of creation order (30ebd0c0)
+
 #### 0.0.5 (2017-11-23)
 
 ##### Bug Fixes
