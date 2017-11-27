@@ -5,8 +5,6 @@ import { Sequelize } from 'sequelize-typescript';
 import BaseDriver from '../BaseDriver';
 import getSequelize, { App, TeamMember, Channel, Version, File, TemporarySave, TemporarySaveFile, WebHook, WebHookError } from './models';
 
-import store from '../../files/store';
-
 const hat = require('hat');
 
 const includeSettings = {
@@ -305,8 +303,7 @@ export default class SequelizeDriver extends BaseDriver {
     const app = await App.findOne<App>({
       where: { id: rawChannel.appId },
     });
-    const versionsToWrite = Object.assign({}, (await this.getApp(app.id))).channels.find(testChannel => testChannel.id === rawChannel.stringId).versions;
-    await store.putFile(path.posix.join(app.slug, rawChannel.stringId, 'versions.json'), Buffer.from(JSON.stringify(versionsToWrite, null, 2)), true);
+    await this.writeVersionsFileToStore(this.fixAppStruct(app), this.fixChannelStruct(rawChannel));
     await this.deleteTemporarySave(save);
     return storedFileNames;
   }
@@ -381,6 +378,7 @@ export default class SequelizeDriver extends BaseDriver {
         break;
       }
     }
+    await this.writeVersionsFileToStore(app, channel);
     return this.fixChannelStruct(rawChannel.get());
   }
 }

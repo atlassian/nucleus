@@ -43,6 +43,14 @@ export default abstract class BaseDriver extends IDBDriver {
     });
   }
 
+  protected writeVersionsFileToStore = async (app: NucleusApp, channel: NucleusChannel) => {
+    const versionsToWrite = Object.assign({}, (await this.getApp(app.id)))
+      .channels
+      .find(testChannel => testChannel.id === channel.id)
+      .versions;
+    await store.putFile(path.posix.join(app.slug, channel.id, 'versions.json'), Buffer.from(JSON.stringify(versionsToWrite, null, 2)), true);
+  }
+
   /**
    * This method compares to file names to determine if they are technically the same
    * file in the context of a single version/platform/arch combination.  This is used
