@@ -29,7 +29,7 @@ const checkField = (req: Express.Request, res: Express.Response, field: string) 
     });
     return false;
   }
-  if (!req.body[field]) {
+  if (typeof req.body[field] === 'undefined') {
     res.status(400).json({
       error: `Missing required body param: "${field}"`,
     });
@@ -277,6 +277,26 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete'
   await positioner.cleanUpTemporaryFile(req.targetApp, save.saveString);
   await driver.deleteTemporarySave(save);
   res.json({ success: true });
+}));
+
+router.post('/:id/channel/:channelId/dead', requireLogin, a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+  const channel = await driver.getChannel(req.targetApp, req.params.channelId);
+  if (!channel) {
+    return res.status(404).json({
+      error: 'Channel not found',
+    });
+  }
+
+  if (checkFields(req, res, ['version', 'dead'])) {
+    const isGreatest = channel.versions.some(version => semver.gt(version.name, req.body.version));
+    if (isGreatest) {
+      d(`User: ${req.user.id} tried to make a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}.  But was rejected for safety reasons`);
+      return res.status(400).json({ error: 'You can\'t kill the latest version' });
+    }
+    d(`User: ${req.user.id} marking a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
+    res.json(await driver.setVersionDead(req.targetApp, channel, req.body.version, req.body.dead));
+  }
 }));
 
 router.post('/:id/channel/:channelId/upload', a(async (req, res) => {
