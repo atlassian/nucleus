@@ -363,4 +363,24 @@ export default class SequelizeDriver extends BaseDriver {
     await webHook.save();
     return this.fixWebHookStruct(webHook);
   }
+
+  public async setVersionDead(app: NucleusApp, channel: NucleusChannel, versionName: string, dead: boolean) {
+    await this.ensureConnected();
+    const rawChannel = await Channel.findOne<Channel>({
+      where: {
+        appId: parseInt(app.id, 10),
+        stringId: channel.id,
+      },
+      include: [Version],
+    });
+    if (!rawChannel || !rawChannel.versions) return await this.getChannel(app, channel.id);
+    for (const version of rawChannel.versions) {
+      if (version.name === versionName) {
+        version.set('dead', dead);
+        await version.save();
+        break;
+      }
+    }
+    return this.fixChannelStruct(rawChannel.get());
+  }
 }
