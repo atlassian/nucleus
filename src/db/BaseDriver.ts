@@ -26,6 +26,7 @@ export abstract class IDBDriver {
   public abstract createWebHookError(app: NucleusApp, webHookId: number, message: string, code: number, body: string): Promise<void>;
   public abstract setWebHookRegistered(app: NucleusApp, webHookId: number, registered: boolean): Promise<NucleusWebHook>;
   public abstract setVersionDead(app: NucleusApp, channel: NucleusChannel, version: string, dead: boolean): Promise<NucleusChannel>;
+  public abstract setVersionRollout(app: NucleusApp, channel: NucleusChannel, version: string, rollout: number): Promise<NucleusChannel>;
 }
 
 export default abstract class BaseDriver extends IDBDriver {

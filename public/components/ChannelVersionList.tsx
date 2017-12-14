@@ -94,6 +94,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     const ret: NucleusVersion = {
       name: draftVersion.version,
       dead: false,
+      rollout: 0,
       files: draftVersion.filenames.map(fileName => ({
         fileName,
         arch: draftVersion.arch,
@@ -231,6 +232,27 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     }
   }
 
+  private modifyRollout = async () => {
+    if (this.state.modalVersion && !this.state.modalVersion.isPreRelease) {
+      const rawValue = prompt('Please enter a new rollout percentage (between 0 and 100)');
+      if (typeof rawValue !== 'string') return;
+      const newRollout = parseInt(rawValue, 10);
+      if (isNaN(newRollout) || newRollout < 0 || newRollout > 100) return alert('Invalid rollout percentage entered, expected a number between 0 and 100');
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json');
+      const response = await fetch(`/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/rollout`, {
+        headers,
+        credentials: 'include',
+        method: 'POST',
+        body: JSON.stringify({
+          version: this.state.modalVersion.version.name,
+          rollout: newRollout,
+        }),
+      });
+      await this.props.updateApps(false);
+    }
+  }
+
   get killButton() {
     if (!this.state.modalVersion) return null;
     let appearance = 'danger';
@@ -298,6 +320,16 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
                     Uploaded: {this.state.modalVersion.preReleaseDate}
                   </p>
                 ) : null
+              }
+              {
+                this.state.modalVersion.isPreRelease
+                ? null
+                : (
+                  <div style={{ marginTop: 4 }}>
+                    <b>Current Rollout: </b>{this.state.modalVersion.version.rollout}%
+                    <a href="javascript: void" style={{ marginLeft: 8 }} onClick={this.modifyRollout}>Edit</a>
+                  </div>
+                )
               }
               {
                 this.state.modalVersion.version.files.map((file, index) => (

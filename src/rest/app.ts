@@ -299,6 +299,26 @@ router.post('/:id/channel/:channelId/dead', requireLogin, a(async (req, res) => 
   }
 }));
 
+router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+  const channel = await driver.getChannel(req.targetApp, req.params.channelId);
+  if (!channel) {
+    return res.status(404).json({
+      error: 'Channel not found',
+    });
+  }
+
+  if (checkFields(req, res, ['version', 'rollout'])) {
+    if (typeof req.body.rollout !== 'number') {
+      return res.status(400).json({
+        error: 'Rollout % has to be a number',
+      });
+    }
+    d(`User: ${req.user.id} changing a version (${req.body.version}) to have a rollout % of '${req.body.rollout}' for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
+    res.json(await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout));
+  }
+}));
+
 router.post('/:id/channel/:channelId/upload', a(async (req, res) => {
   const token = req.headers.authorization;
   if (token !== req.targetApp.token) {
