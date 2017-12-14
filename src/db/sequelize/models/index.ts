@@ -1,6 +1,9 @@
 import { Table, Column, Model, HasMany, Unique, BelongsTo, Sequelize, DataType, ForeignKey } from 'sequelize-typescript';
 
+import * as debug from 'debug';
+
 import * as config from '../../../config';
+import { QueryInterface } from 'sequelize';
 
 @Table
 export class App extends Model<App> {
@@ -153,6 +156,9 @@ export class Version extends Model<Version> {
   @Column(DataType.BOOLEAN)
   dead: boolean;
 
+  @Column(DataType.INTEGER)
+  rollout: number;
+
   @ForeignKey(() => Channel)
   @Column(DataType.INTEGER)
   channelId: number;
@@ -186,6 +192,32 @@ export class File extends Model<File> {
   version: Version;
 }
 
+const d = debug('nucleus:db:migrator');
+
+const upwardsMigrations: ((queryInterface: QueryInterface) => Promise<void>)[] = [
+  async function addRolloutToVersion(queryInterface: QueryInterface) {
+    const versionDescription = await queryInterface.describeTable(Version.getTableName());
+    if (Object.keys(versionDescription).indexOf('rollout') === -1) {
+      await queryInterface.addColumn(Version.getTableName() as string, 'rollout', {
+        type: (Version as any).attributes.rollout.type,
+      });
+      const versions = await Version.findAll<Version>({
+        where: {
+          rollout: null,
+        },
+      });
+      await Version.update({
+        rollout: 100,
+      }, {
+        where: {
+          rollout: null,
+        },
+      });
+      d('adding the rollout column to version table');
+    }
+  },
+];
+
 export default async function () {
   const sequelize = new Sequelize({
     database: config.sequelize.database,
@@ -209,6 +241,12 @@ export default async function () {
     WebHook,
     WebHookError,
   ]);
+
+  const queryInterface = sequelize.getQueryInterface();
+
+  for (const migrationFn of upwardsMigrations) {
+    await migrationFn(queryInterface);
+  }
 
   return sequelize;
 }

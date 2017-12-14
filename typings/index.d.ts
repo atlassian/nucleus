@@ -123,6 +123,7 @@ interface NucleusChannel {
 interface NucleusVersion {
   name: string;
   dead: boolean;
+  rollout: number;
   files: {
     fileName: string;
     arch: string;

@@ -121,6 +121,7 @@ export default class SequelizeDriver extends BaseDriver {
     newChannel.versions = this.orderVersions((channel.versions || []).map(v => v.get()).map(version => ({
       name: version.name,
       dead: version.dead,
+      rollout: version.rollout,
       files: (version.files || []).map(f => f.get()).map(file => ({
         fileName: file.fileName,
         arch: file.arch,
@@ -281,6 +282,7 @@ export default class SequelizeDriver extends BaseDriver {
       dbVersion = new Version({
         name: save.version,
         dead: false,
+        rollout: 0,
         channelId: rawChannel.id,
       });
       await dbVersion.save();
@@ -374,6 +376,27 @@ export default class SequelizeDriver extends BaseDriver {
     for (const version of rawChannel.versions) {
       if (version.name === versionName) {
         version.set('dead', dead);
+        await version.save();
+        break;
+      }
+    }
+    await this.writeVersionsFileToStore(app, channel);
+    return this.fixChannelStruct(rawChannel.get());
+  }
+
+  public async setVersionRollout(app: NucleusApp, channel: NucleusChannel, versionName: string, rollout: number) {
+    await this.ensureConnected();
+    const rawChannel = await Channel.findOne<Channel>({
+      where: {
+        appId: parseInt(app.id, 10),
+        stringId: channel.id,
+      },
+      include: [Version],
+    });
+    if (!rawChannel || !rawChannel.versions || rollout < 0 || rollout > 100) return await this.getChannel(app, channel.id);
+    for (const version of rawChannel.versions) {
+      if (version.name === versionName) {
+        version.set('rollout', rollout);
         await version.save();
         break;
       }
