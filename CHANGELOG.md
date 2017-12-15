@@ -1,3 +1,9 @@
+### 0.2.0 (2017-12-15)
+
+##### New Features
+
+* **core-platform:** add support for rollout percentages in the versions file (93cf73dc)
+
 ### 0.1.0 (2017-11-27)
 
 ##### New Features
