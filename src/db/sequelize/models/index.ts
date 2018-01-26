@@ -242,6 +242,9 @@ export default async function () {
     WebHookError,
   ]);
 
+  await sequelize.authenticate();
+  await sequelize.sync();
+
   const queryInterface = sequelize.getQueryInterface();
 
   for (const migrationFn of upwardsMigrations) {
