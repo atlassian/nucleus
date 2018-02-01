@@ -1,6 +1,6 @@
 {
   "name": "nucleus-uploader",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Electron Forge publisher for Nucleus Server",
   "main": "src/index.js",
   "author": "Samuel Attard",

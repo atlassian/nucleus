@@ -3,7 +3,13 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 const path = require('path');
 
-const publisher = (artifacts, packageJSON, forgeConfig, authToken, tag, platform, arch) =>
+const publisher = ({
+  artifactPaths: artifacts,
+  packageJSON,
+  forgeConfig,
+  platform,
+  arch,
+}) =>
   new Promise((resolve, reject) => {
     const { nucleus } = forgeConfig;
     if (!nucleus) {
