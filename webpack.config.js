@@ -9,7 +9,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const loaders = require('./webpack.loaders');
 
 const HOST = process.env.NUCLEUS_HOST || '127.0.0.1';
-const PORT = process.env.NUCLEUS_HOST || '8888';
+const PORT = process.env.NUCLEUS_PORT || '8888';
 
 let mainPort = 3030;
 try {
