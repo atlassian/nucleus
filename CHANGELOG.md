@@ -1,3 +1,15 @@
+#### 0.2.1 (2018-03-05)
+
+##### Bug Fixes
+
+* **public:** fix app card height being capped and the card overflowing (4d55f572)
+* **tooling:** fix typo in webpack config (4ab6efcb)
+* **db:** handle case where the database has not been created yet (f3492f3c)
+
+##### Refactors
+
+* **uploader:** update uploader to support new publisher syntax for forge@5 (61ce5457)
+
 ### 0.2.0 (2017-12-15)
 
 ##### New Features
