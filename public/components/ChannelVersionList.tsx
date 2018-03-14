@@ -301,7 +301,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
                 this.state.modalVersion.isPreRelease
                 ? (
                   <AkBanner icon={<WarningIcon label="Warning" />} isOpen>
-                    This is a set of pre-release files, click Publish to make them public
+                    This is a set of pre-release files, click Release to make them public
                   </AkBanner>
                 ) : null
               }
