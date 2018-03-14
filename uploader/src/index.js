@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 const path = require('path');
 
 const publisher = ({
-  artifactPaths: artifacts,
+  artifacts,
   packageJSON,
   forgeConfig,
   platform,
