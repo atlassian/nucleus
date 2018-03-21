@@ -38,6 +38,7 @@
     "express-session": "^1.15.3",
     "fs-extra": "^3.0.1",
     "hat": "^0.0.3",
+    "is-png": "^1.1.0",
     "mysql2": "^1.4.2",
     "node-fetch": "^1.7.3",
     "node-rsa": "^0.4.2",
@@ -53,7 +54,8 @@
     "sequelize": "^4.11.1",
     "sequelize-typescript": "^0.5.0",
     "sqlite3": "^3.1.12",
-    "tedious": "^2.0.0"
+    "tedious": "^2.0.0",
+    "to-ico": "^1.1.5"
   },
   "devDependencies": {
     "@atlaskit/avatar": "^4.0.5",

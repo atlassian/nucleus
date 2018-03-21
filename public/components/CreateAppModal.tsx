@@ -49,8 +49,13 @@ class CreateAppModal extends React.PureComponent<CreateAppModalComponentProps & 
     });
   }
 
+  private isPng = (file: File) => {
+    return file.type === 'image/png';
+  }
+
   create = async () => {
-    const fileInvalid = !this.fileInput.value;
+    const fileInvalid = !this.fileInput.value || !this.fileInput.files.length
+      || !this.fileInput.files[0] || !this.isPng(this.fileInput.files[0]);
     const nameInvalid = !this.state.name;
     this.setState({
       fileInvalid,
@@ -68,6 +73,11 @@ class CreateAppModal extends React.PureComponent<CreateAppModalComponentProps & 
         method: 'POST',
         body: form,
       });
+      if (response.status !== 200) {
+        if (response.status !== 400) return this.props.onDismiss();
+        alert((await response.json()).error);
+        this.props.onDismiss();
+      }
       const app = await response.json();
       this.setState({
         creating: false,
@@ -115,8 +125,12 @@ class CreateAppModal extends React.PureComponent<CreateAppModalComponentProps & 
             required
           />
           <div className={styles.file}>
-            <AkLabel label="Icon" isRequired />
-            <AkFieldBase shouldFitContainer isInvalid={this.state.fileInvalid}>
+            <AkLabel label="Icon" isRequired isInvalid />
+            <AkFieldBase
+              shouldFitContainer
+              isInvalid={this.state.fileInvalid}
+              invalidMessage={this.state.fileInvalid ? 'This is not a valid PNG icon file' : null}
+            >
               <input ref={this.refFile} type="file" />
             </AkFieldBase>
           </div>

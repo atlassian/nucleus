@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as semver from 'semver';
+import * as toIco from 'to-ico';
 
 import store from '../files/store';
 
@@ -32,6 +33,11 @@ export abstract class IDBDriver {
 export default abstract class BaseDriver extends IDBDriver {
   protected async saveIcon(app: NucleusApp, icon: Buffer) {
     await store.putFile(path.posix.join(app.slug, 'icon.png'), icon);
+    const iconAsIco = await toIco([icon], {
+      resize: true,
+      sizes: [16, 24, 32, 48, 64, 128, 256],
+    });
+    await store.putFile(path.posix.join(app.slug, 'icon.ico'), iconAsIco);
   }
 
   protected sluggify(name: string) {

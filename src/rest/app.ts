@@ -3,6 +3,7 @@ import * as fs from 'fs-extra';
 import * as express from 'express';
 import * as NodeRsa from 'node-rsa';
 import * as semver from 'semver';
+import * as isPng from 'is-png';
 
 import { createA } from '../utils/a';
 import driver from '../db/driver';
@@ -81,8 +82,12 @@ router.post('/', requireLogin, a(async (req, res) => {
 
     if (req.files && req.files.icon) {
       d(`Creating a new application: '${req.body.name}'`);
-      res.json(await driver.createApp(req.user as User, req.body.name, await fs.readFile(req.files.icon.path)));
+      const iconBuffer = await fs.readFile(req.files.icon.path);
       await fs.remove(req.files.icon.path);
+      if (!isPng(iconBuffer)) {
+        return res.status(400).json({ error: 'Not PNG' });
+      }
+      res.json(await driver.createApp(req.user as User, req.body.name, iconBuffer));
     } else {
       res.status(400).json({ error: 'Missing icon file' });
     }
