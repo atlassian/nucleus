@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { connect, Dispatch } from 'react-redux';
 import { Redirect, Link } from 'react-router';
+import { UploadField } from '@navjobs/upload';
 
 import AkAvatar from '@atlaskit/avatar';
 import AkButton from '@atlaskit/button';
@@ -259,6 +260,25 @@ autoUpdater.setFeedURL(\`$\{DOMAIN\}/${app.slug}/${channel.id}/$\{process.platfo
     });
   }
 
+  private onNewIcon = async (files: FileList) => {
+    const app = this.getApp();
+    if (app && files && files.length &&
+        files[0] && files[0].type === 'image/png') {
+      const form = new FormData();
+      form.append('icon', files[0]);
+      await fetch(`/rest/app/${app.id}/icon`, {
+        credentials: 'include',
+        method: 'POST',
+        body: form,
+      });
+      (document.querySelector('#app-logo') as HTMLImageElement).src += '?bump';
+      alert('Although the image has been uploaded, please be aware that on ' +
+        'some Nucleus configuration the image may not update for 15-30 ' +
+        'minutes due to the use of a CDN');
+    }
+    (document.querySelector(`.${styles.img} input[type="file"]`) as HTMLInputElement).value = '';
+  }
+
   render() {
     const app = this.getApp();
 
@@ -290,8 +310,19 @@ autoUpdater.setFeedURL(\`$\{DOMAIN\}/${app.slug}/${channel.id}/$\{process.platfo
                   <div style={{ height: 8 }} />
                   <AkButton appearance="danger" onClick={this.resetToken}>Reset Token</AkButton>
                 </div>
-                <div style={{ width: '30%' }}>
-                  <img src={`${this.props.baseUpdateUrl}/${app.slug}/icon.png`} style={{ width: '50%', marginLeft: '25%' }} />
+                <div className={styles.iconContainer}>
+                  <UploadField
+                    onFiles={this.onNewIcon}
+                    containerProps={{
+                      className: styles.img,
+                    }}
+                    uploadProps={{
+                      accept: '.png',
+                    }}
+                  >
+                    <img id="app-logo" src={`${this.props.baseUpdateUrl}/${app.slug}/icon.png`} />
+                    <div className={styles.after}>Change Icon</div>
+                  </UploadField>
                 </div>
               </div>
               <div style={{ marginTop: 16 }}>

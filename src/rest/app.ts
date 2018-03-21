@@ -123,6 +123,22 @@ router.get('/:id', requireLogin, a(async (req, res) => {
   res.json(req.targetApp);
 }));
 
+router.post('/:id/icon', requireLogin, a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+  d(`Setting new application icon: ${req.targetApp.slug}`);
+  if (req.files && req.files.icon) {
+    const iconBuffer = await fs.readFile(req.files.icon.path);
+    await fs.remove(req.files.icon.path);
+    if (!isPng(iconBuffer)) {
+      return res.status(400).json({ error: 'Not PNG' });
+    }
+    await driver.saveIcon(req.targetApp, iconBuffer, true);
+    res.status(200).json({ success: true });
+  } else {
+    res.status(400).json({ error: 'Missing icon file' });
+  }
+}));
+
 router.post('/:id/webhook', requireLogin, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['url', 'secret'])) {

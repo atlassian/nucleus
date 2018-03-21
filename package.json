@@ -72,6 +72,7 @@
     "@atlaskit/spinner": "^2.2.3",
     "@atlaskit/tabs": "^4.0.0",
     "@atlaskit/tooltip": "^6.2.0",
+    "@navjobs/upload": "^3.1.3",
     "@types/aws-sdk": "^2.7.0",
     "@types/body-parser": "^1.16.3",
     "@types/chai": "^4.0.4",

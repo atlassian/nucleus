@@ -31,13 +31,13 @@ export abstract class IDBDriver {
 }
 
 export default abstract class BaseDriver extends IDBDriver {
-  protected async saveIcon(app: NucleusApp, icon: Buffer) {
-    await store.putFile(path.posix.join(app.slug, 'icon.png'), icon);
+  public async saveIcon(app: NucleusApp, icon: Buffer, wipePrevious = false) {
+    await store.putFile(path.posix.join(app.slug, 'icon.png'), icon, wipePrevious);
     const iconAsIco = await toIco([icon], {
       resize: true,
       sizes: [16, 24, 32, 48, 64, 128, 256],
     });
-    await store.putFile(path.posix.join(app.slug, 'icon.ico'), iconAsIco);
+    await store.putFile(path.posix.join(app.slug, 'icon.ico'), iconAsIco, wipePrevious);
   }
 
   protected sluggify(name: string) {

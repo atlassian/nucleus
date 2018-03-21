@@ -1,9 +1,9 @@
 import SequelizeDriver from './sequelize/SequelizeDriver';
 
 import { dbStrategy } from '../config';
-import { IDBDriver } from './BaseDriver';
+import BaseDriver from './BaseDriver';
 
-let driver: IDBDriver;
+let driver: BaseDriver;
 
 switch (dbStrategy) {
   case 'sequelize':

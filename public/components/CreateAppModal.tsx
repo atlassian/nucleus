@@ -131,7 +131,7 @@ class CreateAppModal extends React.PureComponent<CreateAppModalComponentProps & 
               isInvalid={this.state.fileInvalid}
               invalidMessage={this.state.fileInvalid ? 'This is not a valid PNG icon file' : null}
             >
-              <input ref={this.refFile} type="file" />
+              <input ref={this.refFile} type="file" accept=".png" />
             </AkFieldBase>
           </div>
         </div>
