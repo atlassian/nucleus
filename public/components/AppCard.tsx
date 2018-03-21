@@ -25,7 +25,9 @@ class AppCard extends React.PureComponent<AppCardReduxProps & AppCardComponentPr
       <div className={styles.appContainer}>
         <Link to={`/apps/${this.props.app.slug}`}>
           <div className={styles.app}>
-            <img src={`${this.props.baseUpdateUrl}/${this.props.app.slug}/icon.png`} onError={this.badImage} />
+            <div className={styles.imgContainer}>
+              <img src={`${this.props.baseUpdateUrl}/${this.props.app.slug}/icon.png`} onError={this.badImage} />
+            </div>
             <h4>{this.props.app.name}</h4>
           </div>
         </Link>

@@ -13,15 +13,24 @@
     cursor: pointer;
     height: 100%;
     box-shadow: 0 4px 8px -2px rgba(9,30,66,.28), 0 0 1px rgba(9,30,66,.3);
+    text-align: center;
 
     &:hover {
       background: #f4f5f7;
     }
 
-    > img {
-      width: 40%;
-      margin-left: 30%;
+    .imgContainer {
       margin-top: 24px;
+      height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      > img {
+        max-width: 40%;
+        max-height: 160px;
+      }
     }
 
     > h4 {
