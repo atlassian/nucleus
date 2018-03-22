@@ -6,8 +6,8 @@ import * as config from '../../config';
 export default class LocalStore implements IFileStore {
   constructor(private localConfig = config.local) {}
 
-  private getPath(key: string) {
-    return path.resolve(this.localConfig.root, key);
+  private getPath(...keys: string[]) {
+    return path.resolve(this.localConfig.root, ...keys);
   }
 
   public async putFile(key: string, data: Buffer, overwrite = false) {
@@ -34,5 +34,18 @@ export default class LocalStore implements IFileStore {
 
   public async getPublicBaseUrl() {
     return this.localConfig.staticUrl;
+  }
+
+  public async listFiles(prefix: string) {
+    const files: string[] = [];
+    for (const child of await fs.readdir(this.getPath(prefix))) {
+      const childPath = this.getPath(prefix, child);
+      if ((await fs.stat(childPath)).isDirectory()) {
+        files.push(...await this.listFiles(path.join(prefix, child)));
+      } else {
+        files.push(path.join(prefix, child));
+      }
+    }
+    return files;
   }
 }

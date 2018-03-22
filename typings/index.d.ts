@@ -148,6 +148,7 @@ interface IFileStore {
   getFile(key: string): Promise<Buffer>;
   getPublicBaseUrl(): Promise<string>;
   deletePath(key: string): Promise<void>;
+  listFiles(prefix: string): Promise<string[]>;
 }
 
 declare namespace Express {

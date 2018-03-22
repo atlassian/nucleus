@@ -79,21 +79,14 @@ export default class S3Store implements IFileStore {
   public async deletePath(key: string) {
     d(`Deleting files under path: '${key}'`);
     const s3 = new AWS.S3();
-    const objects = await new Promise<AWS.S3.Object[]>((resolve) => {
-      s3.listObjects({
-        Bucket: this.s3Config.bucketName,
-        Prefix: key,
-      }, (err, data) => {
-        resolve(data.Contents);
-      });
-    });
-    d(`Found objects to delete: [${objects.map(object => object.Key).join(', ')}]`);
+    const keys = await this.listFiles(key);
+    d(`Found objects to delete: [${keys.join(', ')}]`);
     await new Promise((resolve) => {
       s3.deleteObjects({
         Bucket: this.s3Config.bucketName,
         Delete: {
-          Objects: objects.map(object => ({
-            Key: object.Key,
+          Objects: keys.map(key => ({
+            Key: key,
           })),
         },
       }, () => resolve());
@@ -105,5 +98,19 @@ export default class S3Store implements IFileStore {
       return this.s3Config.cloudfront.publicUrl;
     }
     return `https://${this.s3Config.bucketName}.s3.amazonaws.com`;
+  }
+
+  public async listFiles(prefix: string) {
+    d(`Listing files under path: '${prefix}'`);
+    const s3 = new AWS.S3();
+    const objects = await new Promise<AWS.S3.Object[]>((resolve) => {
+      s3.listObjects({
+        Bucket: this.s3Config.bucketName,
+        Prefix: prefix,
+      }, (err, data) => {
+        resolve(data.Contents);
+      });
+    });
+    return objects.map(object => object.Key);
   }
 }
