@@ -38,6 +38,7 @@ export default class LocalStore implements IFileStore {
 
   public async listFiles(prefix: string) {
     const files: string[] = [];
+    if (!await fs.pathExists(this.getPath(prefix))) return files;
     for (const child of await fs.readdir(this.getPath(prefix))) {
       const childPath = this.getPath(prefix, child);
       if ((await fs.stat(childPath)).isDirectory()) {
