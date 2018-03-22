@@ -66,7 +66,7 @@ export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, chan
     Buffer.from(
 `[packages]
 name=${app.name} Packages
-baseurl=${store.getPublicBaseUrl()}/${app.slug}/${channel.id}/linux/redhat
+baseurl=${await store.getPublicBaseUrl()}/${app.slug}/${channel.id}/linux/redhat
 enabled=1
 gpgcheck=0`,
     ),
