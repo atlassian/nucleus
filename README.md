@@ -4,13 +4,6 @@
 
 A configurable and versatile update server for all your Electron apps
 
-## ⚠⚠ WARNING ⚠⚠
-
-Please note that you shouldn't use this yet if you plan on shipping macOS builds,
-this project relies on [this Squirrel.Mac PR](https://github.com/Squirrel/Squirrel.Mac/pull/211)
-being merged and pulled into Electron.  This warning will be removed once that PR
-is merged :).
-
 ## Features
 
 * Multiple applications
@@ -18,6 +11,10 @@ is merged :).
 * Companion publisher for [electron-forge](https://github.com/electron-userland/electron-forge) to greatly simplify release publishing
 * Backed by a static file store so minimal server costs
 * One command to run so insanely simple to set up
+
+## Electron Version Requirements
+
+Please note that using Nucleus requires that you use Electron `>=2.0.0`.
 
 ## Setup
 

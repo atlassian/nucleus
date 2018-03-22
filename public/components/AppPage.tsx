@@ -200,7 +200,10 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
 
 const DOMAIN = '${this.props.baseUpdateUrl}';
 const suffix = process.platform === 'darwin' ? \`/RELEASES.json?method=JSON&version=$\{app.getVersion()\}\` : '';
-autoUpdater.setFeedURL(\`$\{DOMAIN\}/${app.slug}/${channel.id}/$\{process.platform\}/$\{process.arch\}$\{suffix\}\`);`}
+autoUpdater.setFeedURL({
+  url: \`$\{DOMAIN\}/${app.slug}/${channel.id}/$\{process.platform\}/$\{process.arch\}$\{suffix\}\`),
+  serverType: 'json',
+});`}
               </Highlight>
             </div>
             <h5>Publisher Usage</h5>
