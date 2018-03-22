@@ -134,7 +134,7 @@ export default class Positioner {
   public getLock = async (app: NucleusApp): Promise<PositionerLock> => {
     const lockFile = path.posix.join(app.slug, '.lock');
     const lock = hat();
-    const currentLock = (await this.store.getFile('.lock')).toString('utf8');
+    const currentLock = (await this.store.getFile(lockFile)).toString('utf8');
     if (currentLock === '') {
       await this.store.putFile('.lock', Buffer.from(lock), true);
       return lock;
@@ -144,7 +144,7 @@ export default class Positioner {
 
   public releaseLock = async (app: NucleusApp, lock: PositionerLock) => {
     const lockFile = path.posix.join(app.slug, '.lock');
-    const currentLock = (await this.store.getFile('.lock')).toString('utf8');
+    const currentLock = (await this.store.getFile(lockFile)).toString('utf8');
     if (currentLock === lock) {
       await this.store.deletePath(lockFile);
     }
