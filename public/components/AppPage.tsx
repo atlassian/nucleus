@@ -226,6 +226,14 @@ autoUpdater.setFeedURL({
 };`}
               </Highlight>
             </div>
+            <h5>Yum Repo Usage</h5>
+            <div className={styles.codeCard}>
+              <Highlight className="bash">
+{`wget "${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/linux/${app.slug}.repo"
+sudo mv "${app.slug}.repo" "/etc/yum.repos.d/${app.slug}.repo"
+yum install <package-name>`}
+              </Highlight>
+            </div>
           </div>
         ),
       };
