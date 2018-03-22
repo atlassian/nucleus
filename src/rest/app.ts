@@ -256,16 +256,21 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
     if (version.name === save.version) versionExists = true;
   }
 
+  const positioner = new Positioner(store);
+  const lock = await positioner.getLock(req.targetApp);
+  if (lock === null) {
+    return res.status(409).json({ error: 'Release already in progress' });
+  }
   d(`User: ${req.user.id} promoted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} becomes version: ${save.version}`);
   const storedFileNames = await driver.registerVersionFiles(save);
   d(`Tested files: [${save.filenames.join(', ')}] but stored: [${storedFileNames.join(', ')}]`);
-  const positioner = new Positioner(store);
   for (const fileName of storedFileNames) {
     d(`Releasing file: ${fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
     const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, fileName, save.cipherPassword);
-    await positioner.handleUpload(req.targetApp, channel, save.version, save.arch, save.platform, fileName, data);
+    await positioner.handleUpload(lock, req.targetApp, channel, save.version, save.arch, save.platform, fileName, data);
   }
-  await positioner.cleanUpTemporaryFile(req.targetApp, save.saveString);
+  await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
+  await positioner.releaseLock(req.targetApp, lock);
   res.json({ success: true });
 
   // Run hooks after sending response

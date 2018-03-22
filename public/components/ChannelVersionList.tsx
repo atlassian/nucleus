@@ -181,6 +181,13 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
         credentials: 'include',
         method: 'POST',
       });
+      if (response.status === 409) {
+        alert('A release is already in progress, please wait a while and try again');
+        this.setState({
+          releasing: false,
+        });
+        return;
+      }
       await this.fetch();
       await this.props.updateApps(false);
       this.setState({

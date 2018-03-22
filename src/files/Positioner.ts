@@ -3,11 +3,15 @@ import * as debug from 'debug';
 import * as path from 'path';
 import * as semver from 'semver';
 
+const hat = require('hat');
+
 const VALID_WINDOWS_SUFFIX = ['-full.nupkg', '-delta.nupkg', '.exe'];
 const VALID_DARWIN_SUFFIX = ['.dmg', '.zip'];
 const CIPHER_MODE = 'aes-256-ctr';
 
 const d = debug('nucleus:positioner');
+
+type PositionerLock = string;
 
 export default class Positioner {
   private store: IFileStore;
@@ -38,13 +42,15 @@ export default class Positioner {
     return Buffer.concat([decipher.update(data), decipher.final()]);
   }
 
-  public async cleanUpTemporaryFile(app: NucleusApp, saveString: string) {
+  public async cleanUpTemporaryFile(lock: PositionerLock, app: NucleusApp, saveString: string) {
+    if (lock === await this.currentLock(app)) return;
     d(`Deleting all temporary files for app: ${app.slug} in save ID: ${saveString}`);
     await this.store.deletePath(path.join(app.slug, 'temp', saveString));
   }
 
-  public async handleUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, platform: string, fileName: string, data: Buffer) {
+  public async handleUpload(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, version: string, arch: string, platform: string, fileName: string, data: Buffer) {
     // Validate arch
+    if (lock === await this.currentLock(app)) return;
     if (arch !== 'ia32' && arch !== 'x64') return;
     d(`Handling upload (${fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${version}) on platform/arch (${platform}/${arch})`);
 
@@ -112,5 +118,29 @@ export default class Positioner {
 
   protected async handleLinuxUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
     console.warn('Will not upload linux file');
+  }
+
+  private currentLock = async (app: NucleusApp) => {
+    const lockFile = path.posix.join(app.slug, '.lock');
+    return (await this.store.getFile(lockFile)).toString('utf8');
+  }
+
+  public getLock = async (app: NucleusApp): Promise<PositionerLock> => {
+    const lockFile = path.posix.join(app.slug, '.lock');
+    const lock = hat();
+    const currentLock = (await this.store.getFile('.lock')).toString('utf8');
+    if (currentLock === '') {
+      await this.store.putFile('.lock', Buffer.from(lock), true);
+      return lock;
+    }
+    return null;
+  }
+
+  public releaseLock = async (app: NucleusApp, lock: PositionerLock) => {
+    const lockFile = path.posix.join(app.slug, '.lock');
+    const currentLock = (await this.store.getFile('.lock')).toString('utf8');
+    if (currentLock === lock) {
+      await this.store.deletePath(lockFile);
+    }
   }
 }
