@@ -300,8 +300,10 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete'
 
   d(`User: ${req.user.id} deleted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} would have been version: ${save.version} with ${save.filenames.length} files`);
   const positioner = new Positioner(store);
-  await positioner.cleanUpTemporaryFile(req.targetApp, save.saveString);
+  const lock = await positioner.getLock(req.targetApp);
+  await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
   await driver.deleteTemporarySave(save);
+  await positioner.releaseLock(req.targetApp, lock);
   res.json({ success: true });
 }));
 
