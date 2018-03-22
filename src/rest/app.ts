@@ -171,6 +171,8 @@ router.post('/:id/channel', requireLogin, a(async (req, res) => {
   if (checkFields(req, res, ['name'])) {
     d(`Creating new channel: '${req.body.name}' for app: '${req.targetApp.slug}'`);
     const channel = await driver.createChannel(req.targetApp, req.body.name);
+    const positioner = new Positioner(store);
+    await positioner.initializeStructure(req.targetApp, channel);
     res.json(channel);
     runHooks(req.targetApp, hook => hook.newChannel(channel));
   }

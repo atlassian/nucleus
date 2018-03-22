@@ -3,6 +3,8 @@ import * as debug from 'debug';
 import * as path from 'path';
 import * as semver from 'semver';
 
+import * as linuxHelpers from './linuxHelpers';
+
 const hat = require('hat');
 
 const VALID_WINDOWS_SUFFIX = ['-full.nupkg', '-delta.nupkg', '.exe'];
@@ -117,7 +119,11 @@ export default class Positioner {
   }
 
   protected async handleLinuxUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
-    console.warn('Will not upload linux file');
+    if (fileName.endsWith('.rpm')) {
+      await linuxHelpers.addFileToYumRepo(this.store, app, channel, fileName, data);
+    } else {
+      console.warn('Will not upload unknown linux file');
+    }
   }
 
   private currentLock = async (app: NucleusApp) => {
@@ -142,5 +148,9 @@ export default class Positioner {
     if (currentLock === lock) {
       await this.store.deletePath(lockFile);
     }
+  }
+
+  public initializeStructure = async (app: NucleusApp, channel: NucleusChannel) => {
+    await linuxHelpers.initializeYumRepo(this.store, app, channel);
   }
 }

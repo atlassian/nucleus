@@ -11,6 +11,10 @@ A configurable and versatile update server for all your Electron apps
 * Companion publisher for [electron-forge](https://github.com/electron-userland/electron-forge) to greatly simplify release publishing
 * Backed by a static file store so minimal server costs
 * One command to run so insanely simple to set up
+* Platform Support:
+  * macOS
+  * Windows
+  * Linux - RedHat
 
 ## Electron Version Requirements
 
@@ -84,6 +88,14 @@ Please ensure you add redis session config and a proper (not local) authenticati
 method when running in a production environment.
 
 To enable logging you need to set `DEBUG=nucleus*`.
+
+## Development Requirements
+
+* Node >= 8
+* Yarn
+* `createrepo` command, on linux you need to install this.  On macOS / Windows
+  just ensure you have docker running and we'll spin up a docker container for
+  `createrepo` to run from.
 
 ## Contributors
 
