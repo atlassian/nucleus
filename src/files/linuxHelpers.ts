@@ -72,6 +72,7 @@ gpgcheck=0`,
     ),
     true,
   );
+  await fs.remove(tmpDir);
 };
 
 export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer) => {
@@ -91,4 +92,5 @@ export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, chann
     storeKey,
     tmpDir,
   );
+  await fs.remove(tmpDir);
 };
