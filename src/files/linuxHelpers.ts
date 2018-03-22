@@ -51,16 +51,7 @@ const getCreateRepoCommand = (dir: string, args: string[]) => {
   ];
 };
 
-export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
-  const tmpDir = await getTmpDir();
-  await cp.spawn(...getCreateRepoCommand(tmpDir, ['-v', '--no-database', './']), {
-    cwd: tmpDir,
-  });
-  await syncDirectoryToStore(
-    store,
-    path.posix.join(app.slug, channel.id, 'linux', 'redhat'),
-    tmpDir,
-  );
+const createRepoFile = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
   await store.putFile(
     path.posix.join(app.slug, channel.id, 'linux', `${app.slug}.repo`),
     Buffer.from(
@@ -72,6 +63,19 @@ gpgcheck=0`,
     ),
     true,
   );
+};
+
+export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
+  const tmpDir = await getTmpDir();
+  await cp.spawn(...getCreateRepoCommand(tmpDir, ['-v', '--no-database', './']), {
+    cwd: tmpDir,
+  });
+  await syncDirectoryToStore(
+    store,
+    path.posix.join(app.slug, channel.id, 'linux', 'redhat'),
+    tmpDir,
+  );
+  await createRepoFile(store, app, channel);
   await fs.remove(tmpDir);
 };
 
@@ -92,5 +96,6 @@ export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, chann
     storeKey,
     tmpDir,
   );
+  await createRepoFile(store, app, channel);
   await fs.remove(tmpDir);
 };
