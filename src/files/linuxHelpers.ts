@@ -79,7 +79,7 @@ export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, chan
   await fs.remove(tmpDir);
 };
 
-export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer) => {
+export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer, version: string) => {
   const tmpDir = await getTmpDir();
   const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'redhat');
   await syncStoreToDirectory(
@@ -87,7 +87,11 @@ export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, chann
     storeKey,
     tmpDir,
   );
-  await fs.writeFile(path.resolve(tmpDir, fileName), data);
+  const binaryPath = path.resolve(tmpDir, `${version}-${fileName}`);
+  if (await fs.pathExists(binaryPath)) {
+    throw new Error('Uploaded a duplicate file');
+  }
+  await fs.writeFile(binaryPath, data);
   await cp.spawn(...getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']), {
     cwd: tmpDir,
   });
@@ -97,5 +101,85 @@ export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, chann
     tmpDir,
   );
   await createRepoFile(store, app, channel);
+  await fs.remove(tmpDir);
+};
+
+const getScanPackagesCommand = (dir: string, args: string[]): [string, string[]] => {
+  if (process.platform === 'linux') {
+    return ['dpkg-scanpackages', args];
+  }
+  return [
+    'docker',
+    ['run', '--rm', '-v', `${dir}:/root`, 'marshallofsound/dpkg-scanpackages', ...args],
+  ];
+};
+
+const getScanSourcesCommand = (dir: string, args: string[]): [string, string[]] => {
+  if (process.platform === 'linux') {
+    return ['dpkg-scansources', args];
+  }
+  return [
+    'docker',
+    ['run', '--rm', '-v', `${dir}:/root`, 'marshallofsound/dpkg-scansources', ...args],
+  ];
+};
+
+const spawnAndGzip = async ([command, args]: [string, string[]], cwd: string): Promise<Buffer> => {
+  const result = await cp.spawn(command, args, {
+    cwd,
+    capture: ['stdout'],
+  });
+  const output: Buffer = result.stdout;
+  const tmpDir = await getTmpDir();
+  await fs.writeFile(path.resolve(tmpDir, 'file'), output);
+  const gzipResult = await cp.spawn('gzip', [,'-9', 'file'], {
+    cwd: tmpDir,
+    capture: ['stdout'],
+  });
+  console.log(tmpDir);
+  // await fs.remove(tmpDir);
+  // return gzipResult.stdout;
+  return await fs.readFile(path.resolve(tmpDir, 'file.gz'));
+};
+
+const writeAptMetadata = async (tmpDir: string) => {
+  const packagesContent = await spawnAndGzip(getScanPackagesCommand(tmpDir, ['binary', '/dev/null']), tmpDir);
+  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Packages.gz'), packagesContent);
+  const sourcesContent = await spawnAndGzip(getScanSourcesCommand(tmpDir, ['binary', '/dev/null']), tmpDir);
+  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Sources.gz'), sourcesContent);
+};
+
+export const initializeAptRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
+  const tmpDir = await getTmpDir();
+  await fs.mkdirs(path.resolve(tmpDir, 'binary'));
+  await writeAptMetadata(tmpDir);
+  await syncDirectoryToStore(
+    store,
+    path.posix.join(app.slug, channel.id, 'linux', 'debian'),
+    tmpDir,
+  );
+  await fs.remove(tmpDir);
+};
+
+export const addFileToAptRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer, version: string) => {
+  const tmpDir = await getTmpDir();
+  const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'debian');
+  await syncStoreToDirectory(
+    store,
+    storeKey,
+    tmpDir,
+  );
+  await fs.mkdirs(path.resolve(tmpDir, 'binary'));
+  const binaryPath = path.resolve(tmpDir, 'binary', `${version}-${fileName}`);
+  if (await fs.pathExists(binaryPath)) {
+    throw new Error('Uploaded a duplicate file');
+  }
+  await fs.writeFile(binaryPath, data);
+  await writeAptMetadata(tmpDir);
+  await syncDirectoryToStore(
+    store,
+    storeKey,
+    tmpDir,
+  );
   await fs.remove(tmpDir);
 };
