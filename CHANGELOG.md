@@ -1,3 +1,32 @@
+### 0.4.0 (2018-03-23)
+
+##### New Features
+
+* **core-platform:**
+  * sign releases in the apt repo (87e34a6e)
+  * add support for apt repos for .deb linux uploads (4367b9c0)
+  * create the .repo file when we upload new releases as well so that existing chan (8f4ab9bd)
+  * add support for hosting RPM files in a yum repo (f4bb2eb9)
+* **public:** show yum repo usage on the app page (ebbc83f3)
+
+##### Bug Fixes
+
+* **tests:**
+  * disable linux positioner tests till we test linuxHelpers properly (6d4d29ee)
+  * take into account lock lookups in Positioner tests (49033489)
+* **core-platform:**
+  * getPublicBaseUrl() is a promise, we must await it to get the string value (adda4c1b)
+  * fix lock not being released, make sure we use per-app locking (d5539f05)
+  * clean up temp yum directories once done (2d0697be)
+  * add locking to the releasing of files to ensure two releases cant run at the sam (ea2c1ea5)
+* **file-store:** fix LocalStore error when the path we try to listFiles from does not exist (407a8092)
+* **tooling:** fix broken build, Positioner calls now need a lock (1b783101)
+* **public:** fix docs for squirrel.mac json server impl in electron (f5180d95)
+
+##### Refactors
+
+* **core-platform:** added a listFiles helper method to all stores (b491d086)
+
 #### 0.2.1 (2018-03-05)
 
 ##### Bug Fixes
