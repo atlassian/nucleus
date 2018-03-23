@@ -1,3 +1,9 @@
+#### 0.4.1 (2018-03-23)
+
+##### Bug Fixes
+
+* **core-platform:** fix gzip arg usage (a4ec1504)
+
 ### 0.4.0 (2018-03-23)
 
 ##### New Features
