@@ -120,7 +120,11 @@ export default class Positioner {
 
   protected async handleLinuxUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
     if (fileName.endsWith('.rpm')) {
-      await linuxHelpers.addFileToYumRepo(this.store, app, channel, fileName, data);
+      d('Adding rpm file to yum repo');
+      await linuxHelpers.addFileToYumRepo(this.store, app, channel, fileName, data, version);
+    } else if (fileName.endsWith('.deb')) {
+      d('Adding deb file to apt repo');
+      await linuxHelpers.addFileToAptRepo(this.store, app, channel, fileName, data, version);
     } else {
       console.warn('Will not upload unknown linux file');
     }
@@ -152,5 +156,6 @@ export default class Positioner {
 
   public initializeStructure = async (app: NucleusApp, channel: NucleusChannel) => {
     await linuxHelpers.initializeYumRepo(this.store, app, channel);
+    await linuxHelpers.initializeAptRepo(this.store, app, channel);
   }
 }

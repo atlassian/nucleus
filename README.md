@@ -15,6 +15,7 @@ A configurable and versatile update server for all your Electron apps
   * macOS
   * Windows
   * Linux - RedHat
+  * Linux - Debian
 
 ## Electron Version Requirements
 

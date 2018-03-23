@@ -234,6 +234,14 @@ sudo mv "${app.slug}.repo" "/etc/yum.repos.d/${app.slug}.repo"
 yum install <package-name>`}
               </Highlight>
             </div>
+            <h5>Apt Repo Usage</h5>
+            <div className={styles.codeCard}>
+              <Highlight className="bash">
+{`sudo sh -c 'echo "deb \"${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/linux/debian/\" binary/" > /etc/apt/sources.list.d/${app.slug}.list'
+sudo apt-get update
+sudo apt-get install <package-name>`}
+              </Highlight>
+            </div>
           </div>
         ),
       };
