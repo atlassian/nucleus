@@ -161,4 +161,14 @@ module.exports = {
       port: ''
     }
   },
+
+  organization: 'My Company Here',
+
+  /**
+   * GPG key to use when signing APT and YUM releases
+   * 
+   * Requires to be unlocked (no password) and have both the private and
+   * public key.
+   */
+  gpgSigningKey: 'GPG KEY HERE'
 };
