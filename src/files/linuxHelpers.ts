@@ -3,6 +3,8 @@ import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
 
+import * as config from '../config';
+
 export const syncDirectoryToStore = async (store: IFileStore, keyPrefix: string, localBaseDir: string, relative: string = '.') => {
   for (const child of await fs.readdir(path.resolve(localBaseDir, relative))) {
     const absoluteChild = path.resolve(localBaseDir, relative, child);
@@ -124,7 +126,7 @@ const getScanSourcesCommand = (dir: string, args: string[]): [string, string[]] 
   ];
 };
 
-const spawnAndGzip = async ([command, args]: [string, string[]], cwd: string): Promise<Buffer> => {
+const spawnAndGzip = async ([command, args]: [string, string[]], cwd: string): Promise<[Buffer, Buffer]> => {
   const result = await cp.spawn(command, args, {
     cwd,
     capture: ['stdout'],
@@ -136,23 +138,67 @@ const spawnAndGzip = async ([command, args]: [string, string[]], cwd: string): P
     cwd: tmpDir,
     capture: ['stdout'],
   });
-  console.log(tmpDir);
-  // await fs.remove(tmpDir);
-  // return gzipResult.stdout;
-  return await fs.readFile(path.resolve(tmpDir, 'file.gz'));
+  const content = await fs.readFile(path.resolve(tmpDir, 'file.gz'));
+  await fs.remove(tmpDir);
+  return [output, content];
 };
 
-const writeAptMetadata = async (tmpDir: string) => {
+const getAptFtpArchiveCommand = (dir: string, args: string[]): [string, string[]] => {
+  if (process.platform === 'linux') {
+    return ['apt-ftparchive', args];
+  }
+  return [
+    'docker',
+    ['run', '--rm', '-v', `${dir}:/root`, 'marshallofsound/apt-ftparchive', ...args],
+  ];
+};
+
+const gpgSign = async (file: string, out: string) => {
+  const tmpDir = await getTmpDir();
+  const key = path.resolve(tmpDir, 'key.asc');
+  await fs.writeFile(key, config.gpgSigningKey);
+  const { stdout, stderr } = await cp.spawn('gpg', ['--import', key], {
+    capture: ['stdout', 'stderr'],
+  });
+  await fs.remove(tmpDir);
+  try { await fs.remove(out); } catch (err) {}
+  const keyImport = stdout.toString() + '--' + stderr.toString();
+  const keyId = keyImport.match(/ key ([A-Za-z0-9]+):/)[1];
+  await cp.spawn('gpg', ['-abs', '--default-key', keyId, '-o', out, file]);
+};
+
+const generateReleaseFile = async (tmpDir: string, app: NucleusApp) => {
+  const configFile = path.resolve(tmpDir, 'Release.conf');
+  await fs.writeFile(configFile, `APT::FTPArchive::Release::Origin "${config.organization || 'Nucleus'}";
+APT::FTPArchive::Release::Label "${app.name}";
+APT::FTPArchive::Release::Suite "stable";
+APT::FTPArchive::Release::Codename "debian";
+APT::FTPArchive::Release::Architectures "i386 amd64";
+APT::FTPArchive::Release::Components "main";
+APT::FTPArchive::Release::Description "${app.name}";`);
+  const { stdout } = await cp.spawn(...getAptFtpArchiveCommand(tmpDir, ['-c=Release.conf', 'release', '.']), {
+    cwd: path.resolve(tmpDir),
+    capture: ['stdout', 'stderr'],
+  });
+  await fs.writeFile(path.resolve(tmpDir, 'Release'), stdout);
+  await gpgSign(path.resolve(tmpDir, 'Release'), path.resolve(tmpDir, 'Release.gpg'));
+  await fs.remove(configFile);
+};
+
+const writeAptMetadata = async (tmpDir: string, app: NucleusApp) => {
   const packagesContent = await spawnAndGzip(getScanPackagesCommand(tmpDir, ['binary', '/dev/null']), tmpDir);
-  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Packages.gz'), packagesContent);
+  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Packages'), packagesContent[0]);
+  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Packages.gz'), packagesContent[1]);
   const sourcesContent = await spawnAndGzip(getScanSourcesCommand(tmpDir, ['binary', '/dev/null']), tmpDir);
-  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Sources.gz'), sourcesContent);
+  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Sources'), sourcesContent[0]);
+  await fs.writeFile(path.resolve(tmpDir, 'binary', 'Sources.gz'), sourcesContent[1]);
+  await generateReleaseFile(path.resolve(tmpDir, 'binary'), app);
 };
 
 export const initializeAptRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
   const tmpDir = await getTmpDir();
   await fs.mkdirs(path.resolve(tmpDir, 'binary'));
-  await writeAptMetadata(tmpDir);
+  await writeAptMetadata(tmpDir, app);
   await syncDirectoryToStore(
     store,
     path.posix.join(app.slug, channel.id, 'linux', 'debian'),
@@ -175,7 +221,7 @@ export const addFileToAptRepo = async (store: IFileStore, app: NucleusApp, chann
     throw new Error('Uploaded a duplicate file');
   }
   await fs.writeFile(binaryPath, data);
-  await writeAptMetadata(tmpDir);
+  await writeAptMetadata(tmpDir, app);
   await syncDirectoryToStore(
     store,
     storeKey,
