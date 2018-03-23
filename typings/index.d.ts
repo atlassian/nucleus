@@ -69,6 +69,8 @@ interface IConfig {
   sequelize: SequelizeOptions;
   localAuth: LocalAuthOptions;
   sessionConfig: SessionConfig;
+  organization?: string;
+  gpgSigningKey: string;
 }
 
 interface User {
