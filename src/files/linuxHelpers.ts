@@ -134,7 +134,7 @@ const spawnAndGzip = async ([command, args]: [string, string[]], cwd: string): P
   const output: Buffer = result.stdout;
   const tmpDir = await getTmpDir();
   await fs.writeFile(path.resolve(tmpDir, 'file'), output);
-  const gzipResult = await cp.spawn('gzip', [,'-9', 'file'], {
+  const gzipResult = await cp.spawn('gzip', ['-9', 'file'], {
     cwd: tmpDir,
     capture: ['stdout'],
   });
