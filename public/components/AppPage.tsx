@@ -231,6 +231,7 @@ autoUpdater.setFeedURL({
               <Highlight className="bash">
 {`wget "${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/linux/${app.slug}.repo"
 sudo mv "${app.slug}.repo" "/etc/yum.repos.d/${app.slug}.repo"
+rpm --import ${this.props.baseUpdateUrl}/public.key
 yum install <package-name>`}
               </Highlight>
             </div>
@@ -238,6 +239,7 @@ yum install <package-name>`}
             <div className={styles.codeCard}>
               <Highlight className="bash">
 {`sudo sh -c 'echo "deb \"${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/linux/debian/\" binary/" > /etc/apt/sources.list.d/${app.slug}.list'
+wget -O - ${this.props.baseUpdateUrl}/public.key | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install <package-name>`}
               </Highlight>
