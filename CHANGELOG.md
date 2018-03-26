@@ -1,3 +1,20 @@
+### 0.5.0 (2018-03-26)
+
+##### Chores
+
+* **tooling:** enable strict ts options (add027ca)
+
+##### Documentation Changes
+
+* **core-platform:** document the new organization and gpgSigningKey properties in the config file (f7f3fb8b)
+
+##### New Features
+
+* **core-platform:**
+  * enable gpg signing of RPM's released through the yum repo (af4b54d4)
+  * host the public key of the gpg key pair on the file store (d1c155e6)
+* **public:** show gpg public key usage for apt and yum (f7da3f37)
+
 #### 0.4.1 (2018-03-23)
 
 ##### Bug Fixes
