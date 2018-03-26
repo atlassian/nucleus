@@ -1,3 +1,9 @@
+#### 0.5.1 (2018-03-26)
+
+##### Chores
+
+* **tooling:** ignore sqlite on publish (287ef73e)
+
 ### 0.5.0 (2018-03-26)
 
 ##### Chores
