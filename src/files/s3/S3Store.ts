@@ -1,6 +1,5 @@
 import * as AWS from 'aws-sdk';
 import * as debug from 'debug';
-import * as path from 'path';
 
 import * as config from '../../config';
 
@@ -111,6 +110,6 @@ export default class S3Store implements IFileStore {
         resolve(data.Contents);
       });
     });
-    return objects.map(object => object.Key);
+    return objects.map(object => object.Key).filter(key => !!key) as string[];
   }
 }

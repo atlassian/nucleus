@@ -1,5 +1,3 @@
-import * as crypto from 'crypto';
-import * as path from 'path';
 import { Sequelize } from 'sequelize-typescript';
 
 import BaseDriver from '../BaseDriver';
@@ -56,7 +54,7 @@ export default class SequelizeDriver extends BaseDriver {
     });
     await teamMember.save();
     await this.saveIcon(app.get(), icon);
-    return await this.getApp(app.id);
+    return (await this.getApp(app.id))!;
   }
 
   public async setTeam(app: NucleusApp, userIdents: string[]) {
@@ -81,15 +79,15 @@ export default class SequelizeDriver extends BaseDriver {
       });
       await member.save();
     }
-    return await this.getApp(app.id);
+    return (await this.getApp(app.id!))!;
   }
 
   public async resetAppToken(app: NucleusApp) {
     await this.ensureConnected();
-    const rawApp = await App.findById<App>(app.id);
+    const rawApp = (await App.findById<App>(app.id))!;
     rawApp.set('token', hat());
     await rawApp.save();
-    return this.getApp(rawApp.id);
+    return (await this.getApp(rawApp.id))!;
   }
 
   private fixAppStruct(app: App): NucleusApp {
@@ -118,11 +116,11 @@ export default class SequelizeDriver extends BaseDriver {
     const newChannel: NucleusChannel = {} as any;
     newChannel.id = channel.stringId;
     newChannel.name = channel.name;
-    newChannel.versions = this.orderVersions((channel.versions || []).map(v => v.get()).map(version => ({
+    newChannel.versions = this.orderVersions((channel.versions || [] as Version[]).map(v => v.get() as Version).map(version => ({
       name: version.name,
       dead: version.dead,
       rollout: version.rollout,
-      files: (version.files || []).map(f => f.get()).map(file => ({
+      files: (version.files || []).map(f => f.get() as File).map(file => ({
         fileName: file.fileName,
         arch: file.arch,
         platform: file.platform as NucleusPlatform,
@@ -160,7 +158,7 @@ export default class SequelizeDriver extends BaseDriver {
     await this.ensureConnected();
     const newChannel = await Channel.findOne({
       where: {
-        appId: parseInt(app.id, 10),
+        appId: parseInt(app.id!, 10),
         stringId: channel.id,
       },
     });
@@ -174,7 +172,7 @@ export default class SequelizeDriver extends BaseDriver {
     await this.ensureConnected();
     const channel = await Channel.findOne({
       where: {
-        appId: parseInt(app.id, 10),
+        appId: parseInt(app.id!, 10),
         stringId: channelId,
       },
     });
@@ -222,7 +220,7 @@ export default class SequelizeDriver extends BaseDriver {
   public async getTemporarySaves(app: NucleusApp, channel: NucleusChannel) {
     const rawChannel = await Channel.findOne<Channel>({
       where: {
-        appId: parseInt(app.id, 10),
+        appId: parseInt(app.id!, 10),
         stringId: channel.id,
       },
     });
@@ -240,9 +238,9 @@ export default class SequelizeDriver extends BaseDriver {
   public async saveTemporaryVersionFiles(app: NucleusApp, channel: NucleusChannel, version: string, filenames: string[], arch: string, platform: NucleusPlatform) {
     await this.ensureConnected();
 
-    const rawChannel = await Channel.findOne<Channel>({
+    const rawChannel = (await Channel.findOne<Channel>({
       where: { stringId: channel.id },
-    });
+    }))!;
 
     const save = new TemporarySave({
       platform,
@@ -268,12 +266,12 @@ export default class SequelizeDriver extends BaseDriver {
   public async registerVersionFiles(save: ITemporarySave) {
     await this.ensureConnected();
 
-    const rawSave = await TemporarySave.findOne<TemporarySave>({
+    const rawSave = (await TemporarySave.findOne<TemporarySave>({
       where: { id: save.id },
-    });
-    const rawChannel = await Channel.findOne<Channel>({
+    }))!;
+    const rawChannel = (await Channel.findOne<Channel>({
       where: { id: rawSave.channelId },
-    });
+    }))!;
     let dbVersion = await Version.findOne<Version>({
       where: { name: save.version, channelId: rawSave.channelId },
       include: [File],
@@ -302,9 +300,9 @@ export default class SequelizeDriver extends BaseDriver {
         await newFile.save();
       }
     }
-    const app = await App.findOne<App>({
+    const app = (await App.findOne<App>({
       where: { id: rawChannel.appId },
-    });
+    }))!;
     await this.writeVersionsFileToStore(this.fixAppStruct(app), this.fixChannelStruct(rawChannel));
     await this.deleteTemporarySave(save);
     return storedFileNames;
@@ -312,9 +310,9 @@ export default class SequelizeDriver extends BaseDriver {
 
   public async deleteTemporarySave(save: ITemporarySave) {
     await this.ensureConnected();
-    const rawSave = await TemporarySave.findOne<TemporarySave>({
+    const rawSave = (await TemporarySave.findOne<TemporarySave>({
       where: { id: save.id },
-    });
+    }))!;
     await rawSave.destroy();
   }
 
@@ -367,12 +365,12 @@ export default class SequelizeDriver extends BaseDriver {
     await this.ensureConnected();
     const rawChannel = await Channel.findOne<Channel>({
       where: {
-        appId: parseInt(app.id, 10),
+        appId: parseInt(app.id!, 10),
         stringId: channel.id,
       },
       include: [Version],
     });
-    if (!rawChannel || !rawChannel.versions) return await this.getChannel(app, channel.id);
+    if (!rawChannel || !rawChannel.versions) return (await this.getChannel(app, channel.id!))!;
     for (const version of rawChannel.versions) {
       if (version.name === versionName) {
         version.set('dead', dead);
@@ -388,12 +386,12 @@ export default class SequelizeDriver extends BaseDriver {
     await this.ensureConnected();
     const rawChannel = await Channel.findOne<Channel>({
       where: {
-        appId: parseInt(app.id, 10),
+        appId: parseInt(app.id!, 10),
         stringId: channel.id,
       },
       include: [Version],
     });
-    if (!rawChannel || !rawChannel.versions || rollout < 0 || rollout > 100) return await this.getChannel(app, channel.id);
+    if (!rawChannel || !rawChannel.versions || rollout < 0 || rollout > 100) return (await this.getChannel(app, channel.id!))!;
     for (const version of rawChannel.versions) {
       if (version.name === versionName) {
         version.set('rollout', rollout);

@@ -43,7 +43,7 @@ const getTmpDir = async () => {
   return tmpDir;
 };
 
-const getCreateRepoCommand = (dir: string, args: string[]) => {
+const getCreateRepoCommand = (dir: string, args: string[]): [string, string[]] => {
   if (process.platform === 'linux') {
     return ['createrepo', args];
   }
@@ -69,7 +69,8 @@ gpgcheck=0`,
 
 export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
   const tmpDir = await getTmpDir();
-  await cp.spawn(...getCreateRepoCommand(tmpDir, ['-v', '--no-database', './']), {
+  const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--no-database', './']);
+  await cp.spawn(exe, args, {
     cwd: tmpDir,
   });
   await syncDirectoryToStore(
@@ -94,7 +95,8 @@ export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, chann
     throw new Error('Uploaded a duplicate file');
   }
   await fs.writeFile(binaryPath, data);
-  await cp.spawn(...getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']), {
+  const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']);
+  await cp.spawn(exe, args, {
     cwd: tmpDir,
   });
   await syncDirectoryToStore(
@@ -134,7 +136,7 @@ const spawnAndGzip = async ([command, args]: [string, string[]], cwd: string): P
   const output: Buffer = result.stdout;
   const tmpDir = await getTmpDir();
   await fs.writeFile(path.resolve(tmpDir, 'file'), output);
-  const gzipResult = await cp.spawn('gzip', ['-9', 'file'], {
+  await cp.spawn('gzip', ['-9', 'file'], {
     cwd: tmpDir,
     capture: ['stdout'],
   });
@@ -163,7 +165,7 @@ const gpgSign = async (file: string, out: string) => {
   await fs.remove(tmpDir);
   try { await fs.remove(out); } catch (err) {}
   const keyImport = stdout.toString() + '--' + stderr.toString();
-  const keyId = keyImport.match(/ key ([A-Za-z0-9]+):/)[1];
+  const keyId = keyImport.match(/ key ([A-Za-z0-9]+):/)![1];
   await cp.spawn('gpg', ['-abs', '--default-key', keyId, '-o', out, file]);
 };
 
@@ -176,7 +178,8 @@ APT::FTPArchive::Release::Codename "debian";
 APT::FTPArchive::Release::Architectures "i386 amd64";
 APT::FTPArchive::Release::Components "main";
 APT::FTPArchive::Release::Description "${app.name}";`);
-  const { stdout } = await cp.spawn(...getAptFtpArchiveCommand(tmpDir, ['-c=Release.conf', 'release', '.']), {
+  const [exe, args] = getAptFtpArchiveCommand(tmpDir, ['-c=Release.conf', 'release', '.']);
+  const { stdout } = await cp.spawn(exe, args, {
     cwd: path.resolve(tmpDir),
     capture: ['stdout', 'stderr'],
   });

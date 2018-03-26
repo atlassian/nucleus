@@ -1,9 +1,13 @@
 import * as passport from 'passport';
-import { Strategy as OpenIDStrategy } from 'passport-openid';
+const { Strategy } = require('passport-openid');
 
 import { baseURL, openid, adminIdentifiers } from '../../config';
+import { OpenIDStrategyType } from './_types';
 
 const noop = () => '';
+/* tslint:disable */
+const OpenIDStrategy: typeof OpenIDStrategyType = Strategy;
+/* tslint:enable */
 
 export const useOpenID = () => {
   passport.use(new OpenIDStrategy({
@@ -12,8 +16,8 @@ export const useOpenID = () => {
     providerURL: openid.providerURL,
     stateless: openid.stateless,
     profile: openid.profile,
-  }, (identifier, profile: any, cb) => {
-    const email = profile.emails.filter(email => (new RegExp(`@${openid.domain}$`)).test(email.value))[0];
+  }, (identifier, profile, cb) => {
+    const email = (profile.emails || []).filter(email => (new RegExp(`@${openid.domain}$`)).test(email.value))[0];
     if (!email) {
       return cb(null, false, { message: `Not an @${openid.domain} email address.` });
     }

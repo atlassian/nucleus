@@ -201,16 +201,13 @@ const upwardsMigrations: ((queryInterface: QueryInterface) => Promise<void>)[] =
       await queryInterface.addColumn(Version.getTableName() as string, 'rollout', {
         type: (Version as any).attributes.rollout.type,
       });
-      const versions = await Version.findAll<Version>({
-        where: {
-          rollout: null,
-        },
-      });
       await Version.update({
         rollout: 100,
       }, {
         where: {
-          rollout: null,
+          rollout: {
+            $eq: null,
+          },
         },
       });
       d('adding the rollout column to version table');

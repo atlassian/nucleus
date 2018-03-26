@@ -35,10 +35,15 @@ const sessionOpts: session.SessionOptions = {
 
 switch (sessionConfig.type) {
   case 'redis':
-    sessionOpts.store = new RedisStore({
-      host: sessionConfig.redis.host,
-      port: sessionConfig.redis.port,
-    });
+    if (!sessionConfig.redis) {
+      console.error('Expected sessionConfig.redis to exist when type=redis');
+      process.exit(1);
+    } else {
+      sessionOpts.store = new RedisStore({
+        host: sessionConfig.redis.host,
+        port: sessionConfig.redis.port,
+      });
+    }
     break;
 }
 
