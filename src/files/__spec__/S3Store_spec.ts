@@ -1,19 +1,13 @@
 import * as AWS from 'aws-sdk';
 import { expect } from 'chai';
 import { EventEmitter } from 'events';
-import * as fs from 'fs-extra';
-import * as os from 'os';
-import * as path from 'path';
-import { createStubInstance, stub, SinonStubbedInstance, SinonSpy } from 'sinon';
+import { stub, SinonStubbedInstance } from 'sinon';
 
 import S3Store from '../s3/S3Store';
 
 describe('S3Store', () => {
   let store: S3Store;
   let S3: typeof AWS.S3;
-  /* tslint:disable */
-  let CloudFront: typeof AWS.CloudFront;
-  /* tslint:enable */
   let s3Watcher: EventEmitter;
   let cloudFrontWatcher: EventEmitter;
   let s3Config: S3Options;
@@ -26,7 +20,6 @@ describe('S3Store', () => {
     };
     store = new S3Store(s3Config);
     S3 = AWS.S3;
-    CloudFront = AWS.CloudFront;
     s3Watcher = new EventEmitter();
     cloudFrontWatcher = new EventEmitter();
     /* tslint:disable */
@@ -76,8 +69,8 @@ describe('S3Store', () => {
         instance.putObject.callsArgWith(1, null);
       });
       expect(await store.putFile('myKey', Buffer.from('value'))).to.equal(true);
-      expect(s3.putObject.callCount).to.equal(1);
-      expect(s3.putObject.firstCall.args[0]).to.have.property('Key', 'myKey');
+      expect(s3!.putObject.callCount).to.equal(1);
+      expect(s3!.putObject.firstCall.args[0]).to.have.property('Key', 'myKey');
     });
 
     it('should not overwrite files by default', async () => {
@@ -88,7 +81,7 @@ describe('S3Store', () => {
         instance.putObject.callsArgWith(1, null);
       });
       expect(await store.putFile('myKey', Buffer.from('value'))).to.equal(false);
-      expect(s3.putObject.callCount).to.equal(0);
+      expect(s3!.putObject.callCount).to.equal(0);
     });
 
     it('should overwrite files when overwrite = true', async () => {
@@ -99,7 +92,7 @@ describe('S3Store', () => {
         instance.putObject.callsArgWith(1, null);
       });
       expect(await store.putFile('myKey', Buffer.from('value'), true)).to.equal(true);
-      expect(s3.putObject.callCount).to.equal(1);
+      expect(s3!.putObject.callCount).to.equal(1);
     });
 
     it('should put objects with appropriate read config', async () => {
@@ -110,8 +103,8 @@ describe('S3Store', () => {
         instance.putObject.callsArgWith(1, null);
       });
       expect(await store.putFile('myKey', Buffer.from('value'), true)).to.equal(true);
-      expect(s3.putObject.callCount).to.equal(1);
-      expect(s3.putObject.firstCall.args[0]).to.deep.equal({
+      expect(s3!.putObject.callCount).to.equal(1);
+      expect(s3!.putObject.firstCall.args[0]).to.deep.equal({
         Bucket: 'myBucket',
         Key: 'myKey',
         Body: Buffer.from('value'),
@@ -124,9 +117,7 @@ describe('S3Store', () => {
         distributionId: '0id',
         publicUrl: 'https://this.is.custom/lel',
       };
-      let s3: SinonStubbedInstance<AWS.S3>;
       s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
-        s3 = instance;
         instance.headObject.callsArgWith(1, null);
         instance.putObject.callsArgWith(1, null);
       });
@@ -135,8 +126,8 @@ describe('S3Store', () => {
         cf = instance;
       });
       expect(await store.putFile('myKey', Buffer.from('value'), true)).to.equal(true);
-      expect(cf.createInvalidation.callCount).to.equal(1);
-      const invalidateOptions = cf.createInvalidation.firstCall.args[0];
+      expect(cf!.createInvalidation.callCount).to.equal(1);
+      const invalidateOptions = cf!.createInvalidation.firstCall.args[0];
       expect(invalidateOptions).to.have.property('DistributionId', '0id');
       expect(invalidateOptions.InvalidationBatch.Paths.Quantity).to.equal(1);
       expect(invalidateOptions.InvalidationBatch.Paths.Items).to.deep.equal(['/myKey']);
@@ -152,14 +143,12 @@ describe('S3Store', () => {
         instance.getObject.callsArgWith(1, { error: true });
       });
       expect((await store.getFile('key')).toString()).to.equal('');
-      expect(s3.getObject.callCount).to.equal(1);
-      expect(s3.getObject.firstCall.args[0].Key).to.equal('key');
+      expect(s3!.getObject.callCount).to.equal(1);
+      expect(s3!.getObject.firstCall.args[0].Key).to.equal('key');
     });
 
     it('should load the file contents if it exists', async () => {
-      let s3: SinonStubbedInstance<AWS.S3>;
       s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
-        s3 = instance;
         instance.getObject.callsArgWith(1, null, { Body: Buffer.from('thisIsValue') });
       });
       expect((await store.getFile('key')).toString()).to.equal('thisIsValue');

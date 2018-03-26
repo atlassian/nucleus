@@ -1,7 +1,5 @@
-import * as express from 'express';
 import * as passport from 'passport';
 import { BasicStrategy } from 'passport-http';
-import * as util from 'util';
 
 import { localAuth, adminIdentifiers } from '../../config';
 

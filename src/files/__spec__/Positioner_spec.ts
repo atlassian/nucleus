@@ -55,7 +55,7 @@ describe('Positioner', () => {
     positioner = new Positioner(fakeStore);
     originalDateToString = stub(Date.prototype, 'toString');
     originalDateToString.returns('MyDate');
-    lock = await positioner.getLock(fakeApp);
+    lock = (await positioner.getLock(fakeApp))!;
     fakeStore.getFile.onFirstCall().returns(Buffer.from(lock));
     fakeStore.putFile.reset();
     fakeStore.putFile.returns(true);

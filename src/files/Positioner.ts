@@ -15,6 +15,22 @@ const d = debug('nucleus:positioner');
 
 type PositionerLock = string;
 
+interface MacOSRelease {
+  version: string;
+  updateTo: {
+    version: string;
+    pub_date: string;
+    notes: string;
+    name: string;
+    url: string;
+  };
+}
+
+interface MacOSReleasesStruct {
+  currentRelease: string;
+  releases: MacOSRelease[];
+}
+
 export default class Positioner {
   private store: IFileStore;
 
@@ -95,7 +111,7 @@ export default class Positioner {
     if (await this.store.putFile(key, data) && fileName.endsWith('.zip')) {
       d('Pushed a zip file to the file store so appending release information to RELEASES.json');
       const releasesKey = path.posix.join(root, 'RELEASES.json');
-      const releasesJson = JSON.parse((await this.store.getFile(releasesKey)).toString('utf8') || '{"releases":[]}');
+      const releasesJson: MacOSReleasesStruct = JSON.parse((await this.store.getFile(releasesKey)).toString('utf8') || '{"releases":[]}');
       if (!releasesJson.currentRelease || semver.gt(version, releasesJson.currentRelease)) {
         d(`The version '${version}' is considered greater than ${releasesJson.currentRelease} so we're updating currentRelease`);
         releasesJson.currentRelease = version;
@@ -135,7 +151,7 @@ export default class Positioner {
     return (await this.store.getFile(lockFile)).toString('utf8');
   }
 
-  public getLock = async (app: NucleusApp): Promise<PositionerLock> => {
+  public getLock = async (app: NucleusApp): Promise<PositionerLock | null> => {
     const lockFile = path.posix.join(app.slug, '.lock');
     const lock = hat();
     const currentLock = (await this.store.getFile(lockFile)).toString('utf8');

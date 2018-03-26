@@ -1,7 +1,6 @@
 import * as debug from 'debug';
 import * as fs from 'fs-extra';
 import * as express from 'express';
-import * as NodeRsa from 'node-rsa';
 import * as semver from 'semver';
 import * as isPng from 'is-png';
 
@@ -15,7 +14,7 @@ const d = debug('nucleus:rest');
 const router = express();
 const a = createA(d);
 
-const requireLogin = (req, res, next) => {
+const requireLogin: express.RequestHandler = (req, res, next) => {
   if (!req.user) {
     d(`Unauthenticated user attempted to access: ${req.url}`);
     return res.status(403).json({ error: 'Forbidden' });
@@ -276,7 +275,8 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
   res.json({ success: true });
 
   // Run hooks after sending response
-  const updatedChannel = await driver.getChannel(req.targetApp, channel.id);
+  const updatedChannel = await driver.getChannel(req.targetApp, channel.id!);
+  if (!updatedChannel) return res.status(400).json({ error: 'Bad channel' });
   const version = updatedChannel.versions.find(version => version.name === save.version);
   if (!version) return;
   if (!versionExists) runHooks(req.targetApp, hook => hook.newVersion(updatedChannel, version));
@@ -303,6 +303,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete'
   d(`User: ${req.user.id} deleted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} would have been version: ${save.version} with ${save.filenames.length} files`);
   const positioner = new Positioner(store);
   const lock = await positioner.getLock(req.targetApp);
+  if (lock === null) return res.status(409).json({ error: 'Operation already in progress' });
   await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
   await driver.deleteTemporarySave(save);
   await positioner.releaseLock(req.targetApp, lock);

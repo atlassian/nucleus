@@ -14,18 +14,18 @@ export abstract class IDBDriver {
   public abstract resetAppToken(app: NucleusApp): Promise<NucleusApp>;
   public abstract getApp(id: AppID): Promise<NucleusApp | null>;
   public abstract createChannel(app: NucleusApp, channelName: string): Promise<NucleusChannel>;
-  public abstract renameChannel(app: NucleusApp, channel: NucleusChannel, newName: string): Promise<NucleusChannel>;
+  public abstract renameChannel(app: NucleusApp, channel: NucleusChannel, newName: string): Promise<NucleusChannel | null>;
   public abstract getChannel(app: NucleusApp, channelId: ChannelID): Promise<NucleusChannel | null>;
   public abstract deleteTemporarySave(save: ITemporarySave): Promise<void>;
-  public abstract getTemporarySave(temporaryId: number): Promise<ITemporarySave>;
+  public abstract getTemporarySave(temporaryId: number): Promise<ITemporarySave | null>;
   public abstract getTemporarySaves(app: NucleusApp, channel: NucleusChannel): Promise<ITemporarySave[]>;
   public abstract saveTemporaryVersionFiles(app: NucleusApp, channel: NucleusChannel, version: string, filenames: string[], arch: string, platform: NucleusPlatform): Promise<ITemporarySave>;
   public abstract registerVersionFiles(save: ITemporarySave): Promise<string[]>;
   public abstract createWebHook(app: NucleusApp, url: string, secret: string): Promise<NucleusWebHook>;
-  public abstract getWebHook(app: NucleusApp, webHookId: number): Promise<NucleusWebHook>;
+  public abstract getWebHook(app: NucleusApp, webHookId: number): Promise<NucleusWebHook | null>;
   public abstract deleteWebHook(app: NucleusApp, webHookId: number): Promise<void>;
   public abstract createWebHookError(app: NucleusApp, webHookId: number, message: string, code: number, body: string): Promise<void>;
-  public abstract setWebHookRegistered(app: NucleusApp, webHookId: number, registered: boolean): Promise<NucleusWebHook>;
+  public abstract setWebHookRegistered(app: NucleusApp, webHookId: number, registered: boolean): Promise<NucleusWebHook | null>;
   public abstract setVersionDead(app: NucleusApp, channel: NucleusChannel, version: string, dead: boolean): Promise<NucleusChannel>;
   public abstract setVersionRollout(app: NucleusApp, channel: NucleusChannel, version: string, rollout: number): Promise<NucleusChannel>;
 }
@@ -51,10 +51,11 @@ export default abstract class BaseDriver extends IDBDriver {
   }
 
   protected writeVersionsFileToStore = async (app: NucleusApp, channel: NucleusChannel) => {
-    const versionsToWrite = Object.assign({}, (await this.getApp(app.id)))
+    const deepChannel = Object.assign({}, (await this.getApp(app.id!)))
       .channels
-      .find(testChannel => testChannel.id === channel.id)
-      .versions;
+      .find(testChannel => testChannel.id === channel.id);
+    if (!deepChannel) return;
+    const versionsToWrite = deepChannel.versions;
     await store.putFile(path.posix.join(app.slug, channel.id, 'versions.json'), Buffer.from(JSON.stringify(versionsToWrite, null, 2)), true);
   }
 

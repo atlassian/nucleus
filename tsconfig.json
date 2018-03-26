@@ -10,7 +10,11 @@
 		"sourceMap": true,
 		"rootDir": "src",
 		"jsx": "react",
-		"experimentalDecorators": true
+		"experimentalDecorators": true,
+		"strictNullChecks": true,
+		"noUnusedLocals": true,
+		"noImplicitThis": true,
+		"noImplicitAny": true
 	},
 	"exclude": [
 		"node_modules",

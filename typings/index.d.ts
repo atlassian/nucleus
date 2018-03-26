@@ -163,8 +163,8 @@ declare namespace Express {
 
   interface Request {
     body: any;
-    targetApp?: NucleusApp;
-    channel?: NucleusChannel;
+    targetApp: NucleusApp;
+    channel: NucleusChannel;
     files: {
       [name: string]: {
         fieldName: string;
@@ -191,4 +191,14 @@ declare module 'to-ico' {
   }) => Promise<Buffer>;
   const foo: ToIco;
   export = foo;
+}
+
+declare module 'child-process-promise' {
+  export const spawn: (exe: string, args: string[], opts?: {
+    cwd?: string;
+    capture?: string[];
+  }) => Promise<{
+    stdout: Buffer;
+    stderr: Buffer;
+  }>;
 }
