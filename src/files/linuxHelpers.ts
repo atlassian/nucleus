@@ -53,6 +53,16 @@ const getCreateRepoCommand = (dir: string, args: string[]): [string, string[]] =
   ];
 };
 
+const getSignRpmCommand = (dir: string, args: string[]): [string, string[]] => {
+  if (process.platform === 'linux') {
+    return ['rpmsign', args];
+  }
+  return [
+    'docker',
+    ['run', '--rm', '-v', `${dir}:/root/working`, 'marshallofsound/sh', `(gpg-agent --daemon) && (gpg --import key.asc || true) && (rpmsign ${args.join(' ')})`],
+  ];
+};
+
 const createRepoFile = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
   await store.putFile(
     path.posix.join(app.slug, channel.id, 'linux', `${app.slug}.repo`),
@@ -61,10 +71,45 @@ const createRepoFile = async (store: IFileStore, app: NucleusApp, channel: Nucle
 name=${app.name} Packages
 baseurl=${await store.getPublicBaseUrl()}/${app.slug}/${channel.id}/linux/redhat
 enabled=1
-gpgcheck=0`,
+gpgcheck=1`,
     ),
     true,
   );
+};
+
+const signRpm = async (rpm: string) => {
+  const tmpDir = await getTmpDir();
+  const fileName = path.basename(rpm);
+  const tmpFile = path.resolve(tmpDir, fileName);
+  await fs.copy(rpm, tmpFile);
+  // Import GPG key
+  const key = path.resolve(tmpDir, 'key.asc');
+  await fs.writeFile(key, config.gpgSigningKey);
+  const { stdout, stderr } = await cp.spawn('gpg', ['--import', key], {
+    capture: ['stdout', 'stderr'],
+  });
+  const keyImport = stdout.toString() + '--' + stderr.toString();
+  const keyId = keyImport.match(/ key ([A-Za-z0-9]+):/)![1];
+  // Sign the RPM file
+  const [exe, args] = getSignRpmCommand(tmpDir, ['-D', `"_gpg_name ${keyId}"`, '--addsign', path.basename(rpm)]);
+  await cp.spawn(exe, args, {
+    cwd: tmpDir,
+    capture: ['stdout'],
+  });
+  // Done signing
+  await fs.copy(tmpFile, rpm, {
+    overwrite: true,
+  });
+  await fs.remove(tmpDir);
+};
+
+const signAllRpms = async (dir: string) => {
+  const rpms = (await fs.readdir(dir))
+    .filter(file => file.endsWith('.rpm'))
+    .map(file => path.resolve(dir, file));
+  for (const rpm of rpms) {
+    await signRpm(rpm);
+  }
 };
 
 export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
@@ -95,6 +140,7 @@ export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, chann
     throw new Error('Uploaded a duplicate file');
   }
   await fs.writeFile(binaryPath, data);
+  await signAllRpms(tmpDir);
   const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']);
   await cp.spawn(exe, args, {
     cwd: tmpDir,
