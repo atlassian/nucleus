@@ -11,3 +11,4 @@ uploader
 /config.*.js
 *.sh
 *.yml
+db.sqlite
