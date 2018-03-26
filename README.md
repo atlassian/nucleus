@@ -90,13 +90,20 @@ method when running in a production environment.
 
 To enable logging you need to set `DEBUG=nucleus*`.
 
-## Development Requirements
+## System Requirements
 
 * Node >= 8
 * Yarn
-* `createrepo` command, on linux you need to install this.  On macOS / Windows
-  just ensure you have docker running and we'll spin up a docker container for
-  `createrepo` to run from.
+* Linux
+  * `createrepo`
+  * `rpmsign`
+  * `dpkg-scanpackages`
+  * `dpkg-scansources`
+  * `gpg`
+  * `apt-ftparchive`
+* macOS / Windows
+  * `docker`
+  * `gpg`
 
 ## Contributors
 
