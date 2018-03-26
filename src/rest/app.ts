@@ -69,14 +69,19 @@ router.get('/', requireLogin, a(async (req, res) => {
   res.json(onlyPermission(req, sortApps(await driver.getApps())));
 }));
 
+const MAGIC_NAMES = [
+  '__healthcheck',
+  'public.key',
+];
+
 router.post('/', requireLogin, a(async (req, res) => {
   if (checkField(req, res, 'name')) {
     // It's unlikely but let's not shoot ourselves in the foot
     // In the healthcheck we use __healthcheck as a magic file to
     // ensure that the file store is alive and working.
     // We need to disallow that app name from being created
-    if (req.body.name === '__healthcheck') {
-      return res.status(400).json({ error: 'You can not call your application __healthcheck' });
+    if (MAGIC_NAMES.includes(req.body.name)) {
+      return res.status(400).json({ error: `You can not call your application ${req.body.name}` });
     }
 
     if (req.files && req.files.icon) {
