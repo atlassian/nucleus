@@ -8,7 +8,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 
 import { createA } from './utils/a';
-import { port } from './config';
+import { port, gpgSigningKey } from './config';
 import driver from './db/driver';
 import store from './files/store';
 import appRouter from './rest/app';
@@ -106,6 +106,13 @@ d('Setting up server');
     d(err);
     return;
   }
+  d('Initializing public GPG key');
+  await store.putFile(
+    'public.key',
+    Buffer.from(gpgSigningKey.split('-----BEGIN PGP PRIVATE KEY BLOCK-----')[0]),
+    true,
+  );
+  d('GPG key now public at:', `${await store.getPublicBaseUrl()}/public.key`);
   app.listen(port, () => {
     d('Nucleus Server started on port:', port);
   });
