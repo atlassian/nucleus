@@ -173,5 +173,6 @@ export default class Positioner {
   public initializeStructure = async (app: NucleusApp, channel: NucleusChannel) => {
     await linuxHelpers.initializeYumRepo(this.store, app, channel);
     await linuxHelpers.initializeAptRepo(this.store, app, channel);
+    await this.store.putFile(path.posix.join(app.slug, channel.id, 'versions.json'), Buffer.from(JSON.stringify([])));
   }
 }
