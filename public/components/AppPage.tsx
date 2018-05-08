@@ -206,22 +206,22 @@ autoUpdater.setFeedURL({
 });`}
               </Highlight>
             </div>
-            <h5>Publisher Usage</h5>
+            <h5>Publisher Usage (Electron Forge >= 6)</h5>
             <div className={styles.codeCard}>
               <Highlight className="javascript">
 {`const forgeConfig = {
   // More config
-  publish_targets: {
-    darwin: ['nucleus-uploader'],
-    win32: ['nucleus-uploader'],
-    linux: ['nucleus-uploader']
-  },
-  nucleus: {
-    host: '${window.location.protocol}//${window.location.host}',
-    appId: '${app.id}',
-    channelId: '${channel.id}',
-    token: process.env.NUCLEUS_TOKEN // This should be set securely
-  }
+  publishers: [
+    {
+      name: '@electron-forge/publisher-nucleus',
+      config: {
+        host: '${window.location.protocol}//${window.location.host}',
+        appId: '${app.id}',
+        channelId: '${channel.id}',
+        token: process.env.NUCLEUS_TOKEN // This should be set securely
+      }
+    }
+  ]
   // More config
 };`}
               </Highlight>

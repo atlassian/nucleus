@@ -6,7 +6,6 @@ public
 scripts
 src
 typings
-uploader
 /config.js
 /config.*.js
 *.sh

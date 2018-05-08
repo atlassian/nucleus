@@ -18,7 +18,6 @@ module.exports = {
     { name: 'db' },
     { name: 'core-platform' },
     { name: 'tests' },
-    { name: 'uploader' },
     { name: 'tooling' },
   ],
   allowCustomScopes: true,

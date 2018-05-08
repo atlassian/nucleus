@@ -6,6 +6,8 @@ The easiest way to upload releases to Nucleus is to use [`electron-forge`](https
 to build and publish your application.  You will find the config required
 on your App's page inside Nucleus.
 
+Check out the publisher documentation at [https://v6.electronforge.io/publishers/nucleus](https://v6.electronforge.io/publishers/nucleus)
+
 ## Custom Way
 
 There is a upload endpoint inside Nucleus, you simply hit it with the
@@ -30,5 +32,4 @@ file to the body.
 Any non-200 status code means something went wrong, a helpful error
 message is normally included in the response.
 
-See the [Nucleus Uploader](../uploader/src/index.js) for a JS code
-example of uploading to Nucleus.
+See the [Nucleus Publisher](https://github.com/electron-userland/electron-forge/blob/master/packages/publisher/nucleus/src/PublisherNucleus.ts) for a JS code example of uploading to Nucleus.
