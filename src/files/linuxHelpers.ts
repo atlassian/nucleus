@@ -215,6 +215,23 @@ const gpgSign = async (file: string, out: string) => {
   await cp.spawn('gpg', ['-abs', '--default-key', keyId, '-o', out, file]);
 };
 
+export const isGpgKeyValid = async () => {
+  if (!config.gpgSigningKey) return false;
+  const tmpDir = await getTmpDir();
+  const testFile = path.resolve(tmpDir, 'test_file');
+  const outFile = path.resolve(tmpDir, 'out_file');
+  await fs.writeFile(testFile, 'foobar');
+  try {
+    await gpgSign(testFile, outFile);
+  } catch (err) {
+    await fs.remove(tmpDir);
+    return false;
+  }
+  const createdFile = await fs.pathExists(outFile);
+  await fs.remove(tmpDir);
+  return createdFile;
+};
+
 const generateReleaseFile = async (tmpDir: string, app: NucleusApp) => {
   const configFile = path.resolve(tmpDir, 'Release.conf');
   await fs.writeFile(configFile, `APT::FTPArchive::Release::Origin "${config.organization || 'Nucleus'}";
