@@ -1,3 +1,18 @@
+### 0.6.0 (2018-05-15)
+
+##### Documentation Changes
+
+* **tooling:** document system reqs for running nucleus now we hava GPG support (a8f2cc85)
+
+##### New Features
+
+* remove nucleus-uploader as the publisher now lives in electron-forge (6d8f4a16)
+* **core-platform:** initialize empty versions.json file when a channel is created (b19af837)
+
+##### Bug Fixes
+
+* **public:** remove bad closing bracket from update usage (40297add)
+
 #### 0.5.1 (2018-03-26)
 
 ##### Chores
