@@ -88,14 +88,18 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
       isTeamListOpen: false,
       teamUpdating: true,
     });
-    const data = new FormData();
-    data.append('team', JSON.stringify(tmpTeam.filter((a, index) => tmpTeam.indexOf(a) === index)));
+
     const response = await fetch(
       `/rest/app/${this.getApp().id}/team`,
       {
         method: 'POST',
         credentials: 'include',
-        body: data,
+        body: JSON.stringify({
+          team: tmpTeam.filter((a, index) => tmpTeam.indexOf(a) === index),
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
     );
     if (response.status !== 200) {
@@ -148,15 +152,18 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
     this.setState({
       loading: true,
     });
-    const data = new FormData();
-    data.append('name', this.state.newChannelName);
     try {
       const newChannel = await (await fetch(
         `/rest/app/${app.id}/channel`,
         {
           method: 'POST',
           credentials: 'include',
-          body: data,
+          body: JSON.stringify({
+            name: this.state.newChannelName,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
       )).json();
       const newApp = Object.assign({}, app);

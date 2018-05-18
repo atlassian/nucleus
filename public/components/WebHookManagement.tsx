@@ -45,16 +45,19 @@ export default class WebHookManagement extends React.PureComponent<WebHookManage
     this.setState({
       creatingWebHook: true,
     });
-    const data = new FormData();
-    data.append('url', this.state.newWebHookURL);
-    data.append('secret', this.state.newWebHookSecret);
     try {
       const { hook, success }: { hook: NucleusWebHook, success: boolean } = await (await fetch(
         `/rest/app/${app.id}/webhook`,
         {
           method: 'POST',
           credentials: 'include',
-          body: data,
+          body: JSON.stringify({
+            url: this.state.newWebHookURL,
+            secret: this.state.newWebHookSecret,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
       )).json();
       const newApp = Object.assign({}, app);

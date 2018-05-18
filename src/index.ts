@@ -16,8 +16,6 @@ import appRouter from './rest/app';
 import { authenticateRouter, setupApp } from './rest/auth';
 import { isGpgKeyValid } from './files/linuxHelpers';
 
-const formData = require('express-form-data');
-
 const d = debug('nucleus');
 const a = createA(d);
 
@@ -28,8 +26,6 @@ app.use(compression());
 app.use(express.static(path.resolve(__dirname, '..', 'public_out')));
 
 app.use(bodyParser.json());
-app.use(formData.parse());
-app.use(formData.format());
 
 app.use((req, res, next) => {
   res.error = (err) => {

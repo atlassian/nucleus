@@ -165,16 +165,6 @@ declare namespace Express {
     body: any;
     targetApp: NucleusApp;
     channel: NucleusChannel;
-    files: {
-      [name: string]: {
-        fieldName: string;
-        originalFilename: string;
-        path: string;
-        size: number;
-        name: string;
-        type: string;
-      }
-    };
   }
 }
 

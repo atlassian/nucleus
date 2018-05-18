@@ -1,8 +1,8 @@
 import * as debug from 'debug';
-import * as fs from 'fs-extra';
 import * as express from 'express';
 import * as semver from 'semver';
 import * as isPng from 'is-png';
+import * as multer from 'multer';
 
 import { createA } from '../utils/a';
 import driver from '../db/driver';
@@ -13,6 +13,7 @@ import WebHook from './WebHook';
 const d = debug('nucleus:rest');
 const router = express();
 const a = createA(d);
+const upload = multer();
 
 const requireLogin: express.RequestHandler = (req, res, next) => {
   if (!req.user) {
@@ -74,7 +75,7 @@ const MAGIC_NAMES = [
   'public.key',
 ];
 
-router.post('/', requireLogin, a(async (req, res) => {
+router.post('/', requireLogin, upload.single('icon'), a(async (req, res) => {
   if (checkField(req, res, 'name')) {
     // It's unlikely but let's not shoot ourselves in the foot
     // In the healthcheck we use __healthcheck as a magic file to
@@ -84,10 +85,9 @@ router.post('/', requireLogin, a(async (req, res) => {
       return res.status(400).json({ error: `You can not call your application ${req.body.name}` });
     }
 
-    if (req.files && req.files.icon) {
+    if (req.file) {
       d(`Creating a new application: '${req.body.name}'`);
-      const iconBuffer = await fs.readFile(req.files.icon.path);
-      await fs.remove(req.files.icon.path);
+      const iconBuffer = req.file.buffer;
       if (!isPng(iconBuffer)) {
         return res.status(400).json({ error: 'Not PNG' });
       }
@@ -127,12 +127,11 @@ router.get('/:id', requireLogin, a(async (req, res) => {
   res.json(req.targetApp);
 }));
 
-router.post('/:id/icon', requireLogin, a(async (req, res) => {
+router.post('/:id/icon', requireLogin, upload.single('icon'), a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   d(`Setting new application icon: ${req.targetApp.slug}`);
-  if (req.files && req.files.icon) {
-    const iconBuffer = await fs.readFile(req.files.icon.path);
-    await fs.remove(req.files.icon.path);
+  if (req.file) {
+    const iconBuffer = req.file.buffer;
     if (!isPng(iconBuffer)) {
       return res.status(400).json({ error: 'Not PNG' });
     }
@@ -355,7 +354,7 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) 
   }
 }));
 
-router.post('/:id/channel/:channelId/upload', a(async (req, res) => {
+router.post('/:id/channel/:channelId/upload', upload.any(), a(async (req, res) => {
   const token = req.headers.authorization;
   if (token !== req.targetApp.token) {
     return res.status(404).json({
@@ -376,12 +375,13 @@ router.post('/:id/channel/:channelId/upload', a(async (req, res) => {
         });
       }
       const existingVersion = channel.versions.find(testVersion => testVersion.name === req.body.version);
-      if (existingVersion && existingVersion.files.some(testFile => Object.keys(req.files).map(key => req.files[key].name).indexOf(testFile.fileName) !== -1)) {
+      const files = req.files as Express.Multer.File[];
+      if (existingVersion && existingVersion.files.some(testFile => files.map(file => file.originalname).indexOf(testFile.fileName) !== -1)) {
         return res.status(400).json({
           error: 'Looks like some of those files have already been uploaded',
         });
       }
-      const fileNames = Object.keys(req.files).map(key => req.files[key].name);
+      const fileNames = files.map(file => file.originalname);
       if ((new Set(fileNames)).size !== fileNames.length) {
         return res.status(400).json({
           error: 'Looks like you tried to upload two or more files with the same file name',
@@ -403,10 +403,9 @@ router.post('/:id/channel/:channelId/upload', a(async (req, res) => {
         req.body.platform,
       );
       const positioner = new Positioner(store);
-      for (const fileKey of Object.keys(req.files)) {
-        const file = req.files[fileKey];
-        await positioner.saveTemporaryFile(req.targetApp, temporaryStore.saveString, file.name, await fs.readFile(file.path), temporaryStore.cipherPassword);
-        await fs.remove(file.path);
+      for (let fileKey = 0; fileKey < files.length; fileKey += 1) {
+        const file = files[fileKey];
+        await positioner.saveTemporaryFile(req.targetApp, temporaryStore.saveString, file.originalname, file.buffer, temporaryStore.cipherPassword);
       }
       res.json({ success: true });
     } else {
