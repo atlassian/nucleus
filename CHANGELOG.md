@@ -1,3 +1,13 @@
+#### 0.6.1 (2018-05-18)
+
+##### New Features
+
+* **core-platform:** add validation of the GPG key to ensure users provide one and it is valid (5a8432b9)
+
+##### Bug Fixes
+
+* **api:** handle file uploads of larger than 100MB (969fc0c1)
+
 ### 0.6.0 (2018-05-15)
 
 ##### Documentation Changes
