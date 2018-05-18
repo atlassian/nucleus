@@ -190,5 +190,5 @@ declare module 'child-process-promise' {
   }) => Promise<{
     stdout: Buffer;
     stderr: Buffer;
-  }>;
+  }> & { childProcess: any };
 }

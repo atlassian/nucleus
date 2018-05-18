@@ -97,9 +97,9 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
         body: JSON.stringify({
           team: tmpTeam.filter((a, index) => tmpTeam.indexOf(a) === index),
         }),
-        headers: {
+        headers: new Headers({
           'Content-Type': 'application/json',
-        },
+        }),
       },
     );
     if (response.status !== 200) {
@@ -161,9 +161,9 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
           body: JSON.stringify({
             name: this.state.newChannelName,
           }),
-          headers: {
+          headers: new Headers({
             'Content-Type': 'application/json',
-          },
+          }),
         },
       )).json();
       const newApp = Object.assign({}, app);

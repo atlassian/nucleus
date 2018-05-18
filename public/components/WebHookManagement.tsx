@@ -55,9 +55,9 @@ export default class WebHookManagement extends React.PureComponent<WebHookManage
             url: this.state.newWebHookURL,
             secret: this.state.newWebHookSecret,
           }),
-          headers: {
+          headers: new Headers({
             'Content-Type': 'application/json',
-          },
+          }),
         },
       )).json();
       const newApp = Object.assign({}, app);

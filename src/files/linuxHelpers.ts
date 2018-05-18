@@ -85,11 +85,24 @@ const signRpm = async (rpm: string) => {
   // Import GPG key
   const key = path.resolve(tmpDir, 'key.asc');
   await fs.writeFile(key, config.gpgSigningKey);
-  const { stdout, stderr } = await cp.spawn('gpg', ['--import', key], {
-    capture: ['stdout', 'stderr'],
-  });
-  const keyImport = stdout.toString() + '--' + stderr.toString();
-  const keyId = keyImport.match(/ key ([A-Za-z0-9]+):/)![1];
+  const stdout: Buffer[] = [];
+  const stderr: Buffer[] = [];
+  const child = cp.spawn('gpg', ['--import', key]);
+  child.childProcess.stdout.on('data', (data: Buffer) => stdout.push(data));
+  child.childProcess.stderr.on('data', (data: Buffer) => stderr.push(data));
+  try {
+    await child;
+  } catch (err) {
+    // Ignore for now
+  }
+  await fs.remove(tmpDir);
+  const keyImport = Buffer.concat(stdout).toString() + '--' + Buffer.concat(stderr).toString();
+  const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
+  if (!keyMatch || !keyMatch[1]) {
+    console.error(JSON.stringify(keyImport));
+    throw new Error('Bad GPG import');
+  }
+  const keyId = keyMatch[1];
   // Sign the RPM file
   const [exe, args] = getSignRpmCommand(tmpDir, ['-D', `"_gpg_name ${keyId}"`, '--addsign', path.basename(rpm)]);
   await cp.spawn(exe, args, {
@@ -205,13 +218,25 @@ const gpgSign = async (file: string, out: string) => {
   const tmpDir = await getTmpDir();
   const key = path.resolve(tmpDir, 'key.asc');
   await fs.writeFile(key, config.gpgSigningKey);
-  const { stdout, stderr } = await cp.spawn('gpg', ['--import', key], {
-    capture: ['stdout', 'stderr'],
-  });
+  const stdout: Buffer[] = [];
+  const stderr: Buffer[] = [];
+  const child = cp.spawn('gpg', ['--import', key]);
+  child.childProcess.stdout.on('data', (data: Buffer) => stdout.push(data));
+  child.childProcess.stderr.on('data', (data: Buffer) => stderr.push(data));
+  try {
+    await child;
+  } catch (err) {
+    // Ignore for now
+  }
   await fs.remove(tmpDir);
   try { await fs.remove(out); } catch (err) {}
-  const keyImport = stdout.toString() + '--' + stderr.toString();
-  const keyId = keyImport.match(/ key ([A-Za-z0-9]+):/)![1];
+  const keyImport = Buffer.concat(stdout).toString() + '--' + Buffer.concat(stderr).toString();
+  const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
+  if (!keyMatch || !keyMatch[1]) {
+    console.error(JSON.stringify(keyImport));
+    throw new Error('Bad GPG import');
+  }
+  const keyId = keyMatch[1];
   await cp.spawn('gpg', ['-abs', '--default-key', keyId, '-o', out, file]);
 };
 
