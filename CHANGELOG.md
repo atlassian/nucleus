@@ -1,3 +1,9 @@
+#### 0.6.2 (2018-05-18)
+
+##### Bug Fixes
+
+* **core-platform:** gpg import on linux throws error even when successful (b3a0c258)
+
 #### 0.6.1 (2018-05-18)
 
 ##### New Features
