@@ -5,3 +5,4 @@ lib
 public_out
 scripts
 *.log
+node_modules

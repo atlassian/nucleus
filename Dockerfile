@@ -1,14 +1,27 @@
-FROM node:6
+FROM node:8
 
-COPY . /opt/service/
 WORKDIR /opt/service
 
-RUN npm rebuild
-RUN rm config.js
-RUN mv config.prod.js config.js
-RUN npm run build-fe-prod
-RUN npm run build-server
-RUN npm prune --production
+# Copy PJ, changes should invalidate entire image
+COPY package.json yarn.lock /opt/service/
+
+# Install dependencies
+RUN yarn
+
+# Copy commong typings
+COPY typings /opt/service/typings
+
+# Copy TS configs
+COPY tsconfig* /opt/service/
+
+# Build backend
+COPY src /opt/service/src
+RUN yarn build-server
+
+# Build frontend
+COPY public /opt/service/public
+COPY webpack.*.js postcss.config.js README.md /opt/service/
+RUN yarn build-fe-prod
 
 EXPOSE 8080
 
