@@ -1,3 +1,19 @@
+### 0.7.0 (2018-05-21)
+
+##### Documentation Changes
+
+* document the new docker image (4790962d)
+
+##### New Features
+
+* automated docker builds of nucleus (f4b26f79)
+
+##### Bug Fixes
+
+* docker login env var (cffa6474)
+* docker login does not need email (6f1b1757)
+* use shorted commit name for tag on docker build (8300dc80)
+
 #### 0.6.2 (2018-05-18)
 
 ##### Bug Fixes
