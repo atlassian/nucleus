@@ -1,3 +1,11 @@
+#### 0.7.2 (2018-05-21)
+
+##### Bug Fixes
+
+* **core-platform:**
+  * allow locks to be given and released (cece6b64)
+  * add positioner lock tests and fix multi-app locking bug (4bcd2f74)
+
 #### 0.7.1 (2018-05-21)
 
 ##### Bug Fixes
