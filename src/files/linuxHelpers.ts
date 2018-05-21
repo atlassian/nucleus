@@ -95,7 +95,6 @@ const signRpm = async (rpm: string) => {
   } catch (err) {
     // Ignore for now
   }
-  await fs.remove(tmpDir);
   const keyImport = Buffer.concat(stdout).toString() + '--' + Buffer.concat(stderr).toString();
   const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
   if (!keyMatch || !keyMatch[1]) {

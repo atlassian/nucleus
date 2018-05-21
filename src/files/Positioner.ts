@@ -61,14 +61,14 @@ export default class Positioner {
   }
 
   public async cleanUpTemporaryFile(lock: PositionerLock, app: NucleusApp, saveString: string) {
-    if (lock === await this.currentLock(app)) return;
+    if (lock !== await this.currentLock(app)) return;
     d(`Deleting all temporary files for app: ${app.slug} in save ID: ${saveString}`);
     await this.store.deletePath(path.join(app.slug, 'temp', saveString));
   }
 
   public async handleUpload(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, version: string, arch: string, platform: string, fileName: string, data: Buffer) {
     // Validate arch
-    if (lock === await this.currentLock(app)) return;
+    if (lock !== await this.currentLock(app)) return;
     if (arch !== 'ia32' && arch !== 'x64') return;
     d(`Handling upload (${fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${version}) on platform/arch (${platform}/${arch})`);
 
