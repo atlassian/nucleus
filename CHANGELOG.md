@@ -1,3 +1,9 @@
+#### 0.7.3 (2018-05-21)
+
+##### Bug Fixes
+
+* **core-platform:** fix tests for locking app ops (5d05ae26)
+
 #### 0.7.2 (2018-05-21)
 
 ##### Bug Fixes
