@@ -23,6 +23,20 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
 
 ## Setup
 
+### Docker
+
+You'll need to set up your own docker image using a Dockefile like below.
+
+```docker
+FROM atlassian/nucleus
+
+COPY config.js /opt/service/config.js
+```
+
+Then running your built docker image will run nucleus on port 8080.
+
+### Manual
+
 ```bash
 git clone git@github.com:atlassian/nucleus.git nucleus-server
 cd nucleus-server
