@@ -23,6 +23,8 @@ COPY public /opt/service/public
 COPY webpack.*.js postcss.config.js README.md /opt/service/
 RUN yarn build-fe-prod
 
+RUN yarn --production
+
 EXPOSE 8080
 
 ENTRYPOINT ["npm", "run", "start-server", "--"]
