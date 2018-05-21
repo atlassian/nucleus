@@ -1,3 +1,9 @@
+#### 0.7.1 (2018-05-21)
+
+##### Bug Fixes
+
+* add missing apt deps to docker image (d8596c2f)
+
 ### 0.7.0 (2018-05-21)
 
 ##### Documentation Changes
