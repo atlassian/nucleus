@@ -156,7 +156,7 @@ export default class Positioner {
     const lock = hat();
     const currentLock = (await this.store.getFile(lockFile)).toString('utf8');
     if (currentLock === '') {
-      await this.store.putFile('.lock', Buffer.from(lock), true);
+      await this.store.putFile(lockFile, Buffer.from(lock), true);
       return lock;
     }
     return null;
