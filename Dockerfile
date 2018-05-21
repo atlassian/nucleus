@@ -1,5 +1,7 @@
 FROM node:8
 
+RUN apt update && apt install createrepo dpkg-dev apt-utils gnupg2 gzip -y
+
 WORKDIR /opt/service
 
 # Copy PJ, changes should invalidate entire image
