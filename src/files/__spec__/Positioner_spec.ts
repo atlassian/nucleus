@@ -60,7 +60,7 @@ describe('Positioner', () => {
     originalDateToString = stub(Date.prototype, 'toString');
     originalDateToString.returns('MyDate');
     lock = (await positioner.getLock(fakeApp))!;
-    fakeStore.getFile.onFirstCall().returns(Buffer.from(lock));
+    fakeStore.getFile.onSecondCall().returns(Buffer.from(lock));
     fakeStore.putFile.reset();
     fakeStore.putFile.returns(true);
   });
@@ -105,6 +105,7 @@ describe('Positioner', () => {
           'fake_slug/fake_channel_id/win32/ia32/thing.exe',
         );
         expect(fakeStore.putFile.firstCall.args[1]).to.equal(firstBuffer);
+        fakeStore.getFile.onCall(2).returns(Buffer.from(lock));
         await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'win32', 'thing.exe', secondBuffer);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/x64/thing.exe',
