@@ -21,7 +21,7 @@
     "start-fe": "webpack-dev-server --progress --profile --colors --quiet --open",
     "start-server": "node lib/index.js",
     "start-server-dev": "nodemon --watch src --exec \"npm run build-server && cross-env DEBUG=nucleus* npm run start-server\" -e ts",
-    "start-static": "mkdir -p .files && serve .files --port 9999",
+    "start-static": "make-dir .files && serve .files --port 9999 --silent",
     "test": "mocha --compilers ts:ts-node/register src/**/__spec__/*_spec.ts"
   },
   "author": "Samuel Attard",
@@ -112,6 +112,7 @@
     "generate-changelog": "^1.6.0",
     "highlight.js": "^9.12.0",
     "html-webpack-plugin": "^2.28.0",
+    "make-dir-cli": "^1.0.0",
     "mocha": "^3.5.3",
     "node-sass": "^4.5.3",
     "nodemon": "^1.11.0",
