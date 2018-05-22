@@ -161,7 +161,16 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
   }
 
   private download = file => () => {
+    const version = this.state.modalVersion.version.name;
+
     let downloadURL = `${this.props.baseUpdateUrl}/${this.props.app.slug}/${this.props.channel.id}/${file.platform}/${file.arch}/${file.fileName}`;
+    if (file.platform === 'linux') {
+      if (/\.deb$/.test(file.fileName)) {
+        downloadURL = `${this.props.baseUpdateUrl}/${this.props.app.slug}/${this.props.channel.id}/${file.platform}/debian/binary/${version}-${file.fileName}`;
+      } else if (/\.rpm$/.test(file.fileName)) {
+        downloadURL = `${this.props.baseUpdateUrl}/${this.props.app.slug}/${this.props.channel.id}/${file.platform}/redhat/${version}-${file.fileName}`;
+      }
+    }
     if (this.state.modalVersion && this.state.modalVersion.isPreRelease) {
       downloadURL = `/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/temporary_releases/${this.state.modalVersion.preReleaseId}/${file.fileName}`;
     }
