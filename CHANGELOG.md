@@ -1,3 +1,9 @@
+#### 0.7.5 (2018-05-22)
+
+##### Bug Fixes
+
+* **core-platform:** fix build due to missing new lines (7fdb3667)
+
 #### 0.7.4 (2018-05-22)
 
 ##### Bug Fixes
