@@ -3,7 +3,8 @@ import * as debug from 'debug';
 import * as path from 'path';
 import * as semver from 'semver';
 
-import * as linuxHelpers from './linuxHelpers';
+import { initializeAptRepo, addFileToAptRepo } from './utils/apt';
+import { initializeYumRepo, addFileToYumRepo } from './utils/yum';
 
 const hat = require('hat');
 
@@ -137,10 +138,10 @@ export default class Positioner {
   protected async handleLinuxUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
     if (fileName.endsWith('.rpm')) {
       d('Adding rpm file to yum repo');
-      await linuxHelpers.addFileToYumRepo(this.store, app, channel, fileName, data, version);
+      await addFileToYumRepo(this.store, app, channel, fileName, data, version);
     } else if (fileName.endsWith('.deb')) {
       d('Adding deb file to apt repo');
-      await linuxHelpers.addFileToAptRepo(this.store, app, channel, fileName, data, version);
+      await addFileToAptRepo(this.store, app, channel, fileName, data, version);
     } else {
       console.warn('Will not upload unknown linux file');
     }
@@ -183,8 +184,8 @@ export default class Positioner {
   }
 
   public initializeStructure = async (app: NucleusApp, channel: NucleusChannel) => {
-    await linuxHelpers.initializeYumRepo(this.store, app, channel);
-    await linuxHelpers.initializeAptRepo(this.store, app, channel);
+    await initializeYumRepo(this.store, app, channel);
+    await initializeAptRepo(this.store, app, channel);
     await this.store.putFile(path.posix.join(app.slug, channel.id, 'versions.json'), Buffer.from(JSON.stringify([])));
   }
 }

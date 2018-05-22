@@ -14,7 +14,7 @@ import driver from './db/driver';
 import store from './files/store';
 import appRouter from './rest/app';
 import { authenticateRouter, setupApp } from './rest/auth';
-import { isGpgKeyValid } from './files/linuxHelpers';
+import { isGpgKeyValid } from './files/utils/gpg';
 
 const d = debug('nucleus');
 const a = createA(d);
