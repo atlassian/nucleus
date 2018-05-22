@@ -1,3 +1,17 @@
+#### 0.7.4 (2018-05-22)
+
+##### Bug Fixes
+
+* **public:**
+  * fix mis-render of multiple draft versions showing the wrong file (51d377d0)
+  * public downloadd URL for linux assets are slightly different to other platforms (6e723ee9)
+* **tooling:** make launch static work on windows (5b9edaeb)
+* **core-platform:** improve resiliance to errors during release process (c5400423)
+
+##### Refactors
+
+* **core-platform:** split liunux-helpers to more generic utils (d53b9e2f)
+
 #### 0.7.3 (2018-05-21)
 
 ##### Bug Fixes
