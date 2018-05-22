@@ -170,6 +170,18 @@ export default class Positioner {
     }
   }
 
+  public withLock = async (app: NucleusApp, fn: (lock: PositionerLock) => Promise<void>): Promise<boolean> => {
+    const lock = await this.getLock(app);
+    if (!lock) return false;
+    try {
+      await fn(lock);
+    } catch (err) {
+      await this.releaseLock(app, lock);
+      throw err;
+    }
+    return true;
+  }
+
   public initializeStructure = async (app: NucleusApp, channel: NucleusChannel) => {
     await linuxHelpers.initializeYumRepo(this.store, app, channel);
     await linuxHelpers.initializeAptRepo(this.store, app, channel);

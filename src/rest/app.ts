@@ -262,20 +262,25 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
   }
 
   const positioner = new Positioner(store);
-  const lock = await positioner.getLock(req.targetApp);
-  if (lock === null) {
+  let storedFileNames: string[];
+
+  if (!(await positioner.withLock(req.targetApp, async (lock) => {
+    d(`User: ${req.user.id} promoted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} becomes version: ${save.version}`);
+
+    storedFileNames = await driver.registerVersionFiles(save);
+    d(`Tested files: [${save.filenames.join(', ')}] but stored: [${storedFileNames.join(', ')}]`);
+
+    for (const fileName of storedFileNames) {
+      d(`Releasing file: ${fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
+
+      const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, fileName, save.cipherPassword);
+      await positioner.handleUpload(lock, req.targetApp, channel, save.version, save.arch, save.platform, fileName, data);
+    }
+    await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
+  }))) {
     return res.status(409).json({ error: 'Release already in progress' });
   }
-  d(`User: ${req.user.id} promoted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} becomes version: ${save.version}`);
-  const storedFileNames = await driver.registerVersionFiles(save);
-  d(`Tested files: [${save.filenames.join(', ')}] but stored: [${storedFileNames.join(', ')}]`);
-  for (const fileName of storedFileNames) {
-    d(`Releasing file: ${fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
-    const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, fileName, save.cipherPassword);
-    await positioner.handleUpload(lock, req.targetApp, channel, save.version, save.arch, save.platform, fileName, data);
-  }
-  await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
-  await positioner.releaseLock(req.targetApp, lock);
+
   res.json({ success: true });
 
   // Run hooks after sending response
@@ -284,7 +289,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
   const version = updatedChannel.versions.find(version => version.name === save.version);
   if (!version) return;
   if (!versionExists) runHooks(req.targetApp, hook => hook.newVersion(updatedChannel, version));
-  if (storedFileNames.length > 0) {
+  if (storedFileNames!.length > 0) {
     runHooks(req.targetApp, hook => hook.newVersionFile(updatedChannel, version));
   }
 }));
@@ -306,11 +311,13 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete'
 
   d(`User: ${req.user.id} deleted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} would have been version: ${save.version} with ${save.filenames.length} files`);
   const positioner = new Positioner(store);
-  const lock = await positioner.getLock(req.targetApp);
-  if (lock === null) return res.status(409).json({ error: 'Operation already in progress' });
-  await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
-  await driver.deleteTemporarySave(save);
-  await positioner.releaseLock(req.targetApp, lock);
+  if (!(await positioner.withLock(req.targetApp, async (lock) => {
+    await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
+    await driver.deleteTemporarySave(save);
+  }))) {
+    return res.status(409).json({ error: 'Operation already in progress' });
+  }
+
   res.json({ success: true });
 }));
 

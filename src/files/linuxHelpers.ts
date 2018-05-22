@@ -32,15 +32,28 @@ export const syncStoreToDirectory = async (store: IFileStore, keyPrefix: string,
   }
 };
 
-const getTmpDir = async () => {
-  let tmpDir = '';
+const withTmpDir = async <T>(fn: (tmpDir: string) => Promise<T>) => {
+  let createdDir = '';
   if (process.platform === 'darwin') {
     await fs.mkdirs(path.resolve('/tmp', 'nucleus'));
-    tmpDir = await fs.mkdtemp(path.resolve('/tmp', 'nucleus', 'wd-'));
+    createdDir = await fs.mkdtemp(path.resolve('/tmp', 'nucleus', 'wd-'));
   } else {
-    tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'nucleus-wd-'));
+    createdDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'nucleus-wd-'));
   }
-  return tmpDir;
+  const cleanup = async () => {
+    if (await fs.pathExists(createdDir)) {
+      await fs.remove(createdDir);
+    }
+  };
+  let result: T;
+  try {
+    result = await fn(createdDir);
+  } catch (err) {
+    await cleanup();
+    throw err;
+  }
+  await cleanup();
+  return result;
 };
 
 const getCreateRepoCommand = (dir: string, args: string[]): [string, string[]] => {
@@ -77,93 +90,104 @@ gpgcheck=1`,
   );
 };
 
-const signRpm = async (rpm: string) => {
-  const tmpDir = await getTmpDir();
-  const fileName = path.basename(rpm);
-  const tmpFile = path.resolve(tmpDir, fileName);
-  await fs.copy(rpm, tmpFile);
-  // Import GPG key
-  const key = path.resolve(tmpDir, 'key.asc');
-  await fs.writeFile(key, config.gpgSigningKey);
+const spawnPromiseAndCapture = async (command: string, args: string[], opts: any = {}): Promise<[Buffer, Buffer, Error | null]> => {
   const stdout: Buffer[] = [];
   const stderr: Buffer[] = [];
-  const child = cp.spawn('gpg', ['--import', key]);
+  const child = cp.spawn(command, args, opts);
   child.childProcess.stdout.on('data', (data: Buffer) => stdout.push(data));
   child.childProcess.stderr.on('data', (data: Buffer) => stderr.push(data));
+  let error: Error | null = null;
   try {
     await child;
   } catch (err) {
-    // Ignore for now
+    error = err;
   }
-  const keyImport = Buffer.concat(stdout).toString() + '--' + Buffer.concat(stderr).toString();
-  const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
-  if (!keyMatch || !keyMatch[1]) {
-    console.error(JSON.stringify(keyImport));
-    throw new Error('Bad GPG import');
-  }
-  const keyId = keyMatch[1];
-  // Sign the RPM file
-  const [exe, args] = getSignRpmCommand(tmpDir, ['-D', `"_gpg_name ${keyId}"`, '--addsign', path.basename(rpm)]);
-  await cp.spawn(exe, args, {
-    cwd: tmpDir,
-    capture: ['stdout'],
-  });
-  // Done signing
-  await fs.copy(tmpFile, rpm, {
-    overwrite: true,
-  });
-  await fs.remove(tmpDir);
+  return [Buffer.concat(stdout), Buffer.concat(stderr), error];
 };
 
-const signAllRpms = async (dir: string) => {
-  const rpms = (await fs.readdir(dir))
+const signRpm = async (rpm: string) => {
+  await withTmpDir(async (tmpDir) => {
+    const fileName = path.basename(rpm);
+    const tmpFile = path.resolve(tmpDir, fileName);
+    await fs.copy(rpm, tmpFile);
+    // Import GPG key
+    const key = path.resolve(tmpDir, 'key.asc');
+    await fs.writeFile(key, config.gpgSigningKey);
+    const [stdout, stderr] = await spawnPromiseAndCapture('gpg', ['--import', key]);
+
+    const keyImport = stdout.toString() + '--' + stderr.toString();
+    const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
+    if (!keyMatch || !keyMatch[1]) {
+      console.error(JSON.stringify(keyImport));
+      throw new Error('Bad GPG import');
+    }
+    const keyId = keyMatch[1];
+    // Sign the RPM file
+    const [exe, args] = getSignRpmCommand(tmpDir, ['-D', `"_gpg_name ${keyId}"`, '--addsign', path.basename(rpm)]);
+    const [signOut, signErr, signError] = await spawnPromiseAndCapture(exe, args, {
+      cwd: tmpDir,
+    });
+    if (signError) {
+      console.error('Failed to sign RPM file');
+      console.error(`Output:\n${signOut.toString()}\n\n${signErr.toString()}`);
+      throw signError;
+    }
+    // Done signing
+    await fs.copy(tmpFile, rpm, {
+      overwrite: true,
+    });
+  });
+};
+
+const signAllRpmFiles = async (dir: string) => {
+  const rpmFiles = (await fs.readdir(dir))
     .filter(file => file.endsWith('.rpm'))
     .map(file => path.resolve(dir, file));
-  for (const rpm of rpms) {
+  for (const rpm of rpmFiles) {
     await signRpm(rpm);
   }
 };
 
 export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
-  const tmpDir = await getTmpDir();
-  const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--no-database', './']);
-  await cp.spawn(exe, args, {
-    cwd: tmpDir,
+  await withTmpDir(async (tmpDir) => {
+    const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--no-database', './']);
+    await cp.spawn(exe, args, {
+      cwd: tmpDir,
+    });
+    await syncDirectoryToStore(
+      store,
+      path.posix.join(app.slug, channel.id, 'linux', 'redhat'),
+      tmpDir,
+    );
+    await createRepoFile(store, app, channel);
   });
-  await syncDirectoryToStore(
-    store,
-    path.posix.join(app.slug, channel.id, 'linux', 'redhat'),
-    tmpDir,
-  );
-  await createRepoFile(store, app, channel);
-  await fs.remove(tmpDir);
 };
 
 export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer, version: string) => {
-  const tmpDir = await getTmpDir();
-  const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'redhat');
-  await syncStoreToDirectory(
-    store,
-    storeKey,
-    tmpDir,
-  );
-  const binaryPath = path.resolve(tmpDir, `${version}-${fileName}`);
-  if (await fs.pathExists(binaryPath)) {
-    throw new Error('Uploaded a duplicate file');
-  }
-  await fs.writeFile(binaryPath, data);
-  await signAllRpms(tmpDir);
-  const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']);
-  await cp.spawn(exe, args, {
-    cwd: tmpDir,
+  await withTmpDir(async (tmpDir) => {
+    const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'redhat');
+    await syncStoreToDirectory(
+      store,
+      storeKey,
+      tmpDir,
+    );
+    const binaryPath = path.resolve(tmpDir, `${version}-${fileName}`);
+    if (await fs.pathExists(binaryPath)) {
+      throw new Error('Uploaded a duplicate file');
+    }
+    await fs.writeFile(binaryPath, data);
+    await signAllRpmFiles(tmpDir);
+    const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']);
+    await cp.spawn(exe, args, {
+      cwd: tmpDir,
+    });
+    await syncDirectoryToStore(
+      store,
+      storeKey,
+      tmpDir,
+    );
+    await createRepoFile(store, app, channel);
   });
-  await syncDirectoryToStore(
-    store,
-    storeKey,
-    tmpDir,
-  );
-  await createRepoFile(store, app, channel);
-  await fs.remove(tmpDir);
 };
 
 const getScanPackagesCommand = (dir: string, args: string[]): [string, string[]] => {
@@ -192,15 +216,15 @@ const spawnAndGzip = async ([command, args]: [string, string[]], cwd: string): P
     capture: ['stdout'],
   });
   const output: Buffer = result.stdout;
-  const tmpDir = await getTmpDir();
-  await fs.writeFile(path.resolve(tmpDir, 'file'), output);
-  await cp.spawn('gzip', ['-9', 'file'], {
-    cwd: tmpDir,
-    capture: ['stdout'],
+  return await withTmpDir(async (tmpDir: string) => {
+    await fs.writeFile(path.resolve(tmpDir, 'file'), output);
+    await cp.spawn('gzip', ['-9', 'file'], {
+      cwd: tmpDir,
+      capture: ['stdout'],
+    });
+    const content = await fs.readFile(path.resolve(tmpDir, 'file.gz'));
+    return [output, content] as [Buffer, Buffer];
   });
-  const content = await fs.readFile(path.resolve(tmpDir, 'file.gz'));
-  await fs.remove(tmpDir);
-  return [output, content];
 };
 
 const getAptFtpArchiveCommand = (dir: string, args: string[]): [string, string[]] => {
@@ -214,46 +238,35 @@ const getAptFtpArchiveCommand = (dir: string, args: string[]): [string, string[]
 };
 
 const gpgSign = async (file: string, out: string) => {
-  const tmpDir = await getTmpDir();
-  const key = path.resolve(tmpDir, 'key.asc');
-  await fs.writeFile(key, config.gpgSigningKey);
-  const stdout: Buffer[] = [];
-  const stderr: Buffer[] = [];
-  const child = cp.spawn('gpg', ['--import', key]);
-  child.childProcess.stdout.on('data', (data: Buffer) => stdout.push(data));
-  child.childProcess.stderr.on('data', (data: Buffer) => stderr.push(data));
-  try {
-    await child;
-  } catch (err) {
-    // Ignore for now
-  }
-  await fs.remove(tmpDir);
-  try { await fs.remove(out); } catch (err) {}
-  const keyImport = Buffer.concat(stdout).toString() + '--' + Buffer.concat(stderr).toString();
-  const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
-  if (!keyMatch || !keyMatch[1]) {
-    console.error(JSON.stringify(keyImport));
-    throw new Error('Bad GPG import');
-  }
-  const keyId = keyMatch[1];
-  await cp.spawn('gpg', ['-abs', '--default-key', keyId, '-o', out, file]);
+  await withTmpDir(async (tmpDir) => {
+    const key = path.resolve(tmpDir, 'key.asc');
+    await fs.writeFile(key, config.gpgSigningKey);
+    const [stdout, stderr] = await spawnPromiseAndCapture('gpg', ['--import', key]);
+    try { await fs.remove(out); } catch (err) {}
+    const keyImport = stdout.toString() + '--' + stderr.toString();
+    const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
+    if (!keyMatch || !keyMatch[1]) {
+      console.error(JSON.stringify(keyImport));
+      throw new Error('Bad GPG import');
+    }
+    const keyId = keyMatch[1];
+    await cp.spawn('gpg', ['-abs', '--default-key', keyId, '-o', out, file]);
+  });
 };
 
 export const isGpgKeyValid = async () => {
   if (!config.gpgSigningKey) return false;
-  const tmpDir = await getTmpDir();
-  const testFile = path.resolve(tmpDir, 'test_file');
-  const outFile = path.resolve(tmpDir, 'out_file');
-  await fs.writeFile(testFile, 'foobar');
-  try {
-    await gpgSign(testFile, outFile);
-  } catch (err) {
-    await fs.remove(tmpDir);
-    return false;
-  }
-  const createdFile = await fs.pathExists(outFile);
-  await fs.remove(tmpDir);
-  return createdFile;
+  return await withTmpDir(async (tmpDir) => {
+    const testFile = path.resolve(tmpDir, 'test_file');
+    const outFile = path.resolve(tmpDir, 'out_file');
+    await fs.writeFile(testFile, 'foobar');
+    try {
+      await gpgSign(testFile, outFile);
+    } catch (err) {
+      return false;
+    }
+    return await fs.pathExists(outFile);
+  });
 };
 
 const generateReleaseFile = async (tmpDir: string, app: NucleusApp) => {
@@ -286,36 +299,36 @@ const writeAptMetadata = async (tmpDir: string, app: NucleusApp) => {
 };
 
 export const initializeAptRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel) => {
-  const tmpDir = await getTmpDir();
-  await fs.mkdirs(path.resolve(tmpDir, 'binary'));
-  await writeAptMetadata(tmpDir, app);
-  await syncDirectoryToStore(
-    store,
-    path.posix.join(app.slug, channel.id, 'linux', 'debian'),
-    tmpDir,
-  );
-  await fs.remove(tmpDir);
+  await withTmpDir(async (tmpDir) => {
+    await fs.mkdirs(path.resolve(tmpDir, 'binary'));
+    await writeAptMetadata(tmpDir, app);
+    await syncDirectoryToStore(
+      store,
+      path.posix.join(app.slug, channel.id, 'linux', 'debian'),
+      tmpDir,
+    );
+  });
 };
 
 export const addFileToAptRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer, version: string) => {
-  const tmpDir = await getTmpDir();
-  const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'debian');
-  await syncStoreToDirectory(
-    store,
-    storeKey,
-    tmpDir,
-  );
-  await fs.mkdirs(path.resolve(tmpDir, 'binary'));
-  const binaryPath = path.resolve(tmpDir, 'binary', `${version}-${fileName}`);
-  if (await fs.pathExists(binaryPath)) {
-    throw new Error('Uploaded a duplicate file');
-  }
-  await fs.writeFile(binaryPath, data);
-  await writeAptMetadata(tmpDir, app);
-  await syncDirectoryToStore(
-    store,
-    storeKey,
-    tmpDir,
-  );
-  await fs.remove(tmpDir);
+  await withTmpDir(async (tmpDir) => {
+    const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'debian');
+    await syncStoreToDirectory(
+      store,
+      storeKey,
+      tmpDir,
+    );
+    await fs.mkdirs(path.resolve(tmpDir, 'binary'));
+    const binaryPath = path.resolve(tmpDir, 'binary', `${version}-${fileName}`);
+    if (await fs.pathExists(binaryPath)) {
+      throw new Error('Uploaded a duplicate file');
+    }
+    await fs.writeFile(binaryPath, data);
+    await writeAptMetadata(tmpDir, app);
+    await syncDirectoryToStore(
+      store,
+      storeKey,
+      tmpDir,
+    );
+  });
 };
