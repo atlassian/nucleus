@@ -51,7 +51,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     if (prevProps.app.id !== this.props.app.id || prevProps.channel.id !== this.props.channel.id) {
       this.fetch();
     }
-    if (this.state.modalVersion) {
+    if (this.state.modalVersion && !this.state.modalVersion.isPreRelease) {
       const foundVersion = this.props.channel.versions.find(version => version.name === this.state.modalVersion.version.name);
       if (!foundVersion) return;
       if (JSON.stringify(this.state.modalVersion.version) !== JSON.stringify(foundVersion)) {
