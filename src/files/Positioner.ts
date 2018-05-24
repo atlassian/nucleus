@@ -147,7 +147,10 @@ export default class Positioner {
     }
   }
 
-  private currentLock = async (app: NucleusApp) => {
+  /**
+   * Don't use unless you know what you're doing
+   */
+  public currentLock = async (app: NucleusApp) => {
     const lockFile = path.posix.join(app.slug, '.lock');
     return (await this.store.getFile(lockFile)).toString('utf8');
   }

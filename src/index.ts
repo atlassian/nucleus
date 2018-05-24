@@ -12,6 +12,7 @@ import { createA } from './utils/a';
 import { port, gpgSigningKey } from './config';
 import driver from './db/driver';
 import store from './files/store';
+import adminRouter from './rest/admin';
 import appRouter from './rest/app';
 import { authenticateRouter, setupApp } from './rest/auth';
 import { isGpgKeyValid } from './files/utils/gpg';
@@ -68,6 +69,10 @@ restRouter.get('/deepcheck', async (req, res) => {
 restRouter.get('/healthcheck', (req, res) => res.json({ alive: true }));
 restRouter.use('/app', appRouter);
 restRouter.use('/auth', authenticateRouter);
+restRouter.use('/admin', (req, res, next) => {
+  if (req.user && req.user.isAdmin) return next();
+  return res.status(403).json({ error: 'Not an admin' });
+}, adminRouter);
 setupApp(app);
 
 restRouter.get('/config', a(async (req, res) => {
