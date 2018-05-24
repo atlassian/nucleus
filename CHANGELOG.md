@@ -1,3 +1,9 @@
+### 0.8.0 (2018-05-24)
+
+##### New Features
+
+* **core-platform:** add admin-only endpoint for clearing all existing locks (ba5b8b1e)
+
 #### 0.7.5 (2018-05-22)
 
 ##### Bug Fixes
