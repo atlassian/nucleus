@@ -183,6 +183,7 @@ export default class Positioner {
       await this.releaseLock(app, lock);
       throw err;
     }
+    await this.releaseLock(app, lock);
     return true;
   }
 
