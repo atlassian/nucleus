@@ -1,3 +1,9 @@
+#### 0.8.1 (2018-05-24)
+
+##### Bug Fixes
+
+* **core-platform:** make withLock release the lock when successful (8314b7ab)
+
 ### 0.8.0 (2018-05-24)
 
 ##### New Features
