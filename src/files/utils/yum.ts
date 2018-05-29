@@ -2,7 +2,7 @@ import * as cp from 'child-process-promise';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-import { spawnPromiseAndCapture } from './spawn';
+import { spawnPromiseAndCapture, escapeShellArguments } from './spawn';
 import { syncDirectoryToStore, syncStoreToDirectory } from './sync';
 import { withTmpDir } from './tmp';
 import * as config from '../../config';
@@ -21,6 +21,7 @@ const getSignRpmCommand = (dir: string, args: string[]): [string, string[]] => {
   if (process.platform === 'linux') {
     return ['rpmsign', args];
   }
+  args = escapeShellArguments(args);
   return [
     'docker',
     ['run', '--rm', '-v', `${dir}:/root/working`, 'marshallofsound/sh', `(gpg-agent --daemon) && (gpg --import key.asc || true) && (rpmsign ${args.join(' ')})`],
@@ -59,7 +60,7 @@ const signRpm = async (rpm: string) => {
     }
     const keyId = keyMatch[1];
     // Sign the RPM file
-    const [exe, args] = getSignRpmCommand(tmpDir, ['-D', `"_gpg_name ${keyId}"`, '--addsign', path.basename(rpm)]);
+    const [exe, args] = getSignRpmCommand(tmpDir, ['-D', `_gpg_name ${keyId}`, '--addsign', path.basename(rpm)]);
     const [signOut, signErr, signError] = await spawnPromiseAndCapture(exe, args, {
       cwd: tmpDir,
     });
