@@ -14,3 +14,15 @@ export const spawnPromiseAndCapture = async (command: string, args: string[], op
   }
   return [Buffer.concat(stdout), Buffer.concat(stderr), error];
 };
+
+export const escapeShellArguments = (args: string[]): string[] => {
+  return args.map(value => {
+    if(value.indexOf(' ') > -1) {
+      if(value.indexOf('"') > -1) {
+        throw new Error(`Unable to escape parameter: ${value}`);
+      }
+      return `"${value}"`;
+    }
+    return value;
+  });
+}
