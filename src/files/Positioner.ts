@@ -155,7 +155,7 @@ export default class Positioner {
     return (await this.store.getFile(lockFile)).toString('utf8');
   }
 
-  public getLock = async (app: NucleusApp): Promise<PositionerLock | null> => {
+  public requestLock = async (app: NucleusApp): Promise<PositionerLock | null> => {
     const lockFile = path.posix.join(app.slug, '.lock');
     const lock = hat();
     const currentLock = (await this.store.getFile(lockFile)).toString('utf8');
@@ -175,7 +175,7 @@ export default class Positioner {
   }
 
   public withLock = async (app: NucleusApp, fn: (lock: PositionerLock) => Promise<void>): Promise<boolean> => {
-    const lock = await this.getLock(app);
+    const lock = await this.requestLock(app);
     if (!lock) return false;
     try {
       await fn(lock);

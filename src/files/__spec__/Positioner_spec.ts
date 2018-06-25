@@ -59,7 +59,7 @@ describe('Positioner', () => {
     positioner = new Positioner(fakeStore);
     originalDateToString = stub(Date.prototype, 'toString');
     originalDateToString.returns('MyDate');
-    lock = (await positioner.getLock(fakeApp))!;
+    lock = (await positioner.requestLock(fakeApp))!;
     fakeStore.getFile.onSecondCall().returns(Buffer.from(lock));
     fakeStore.putFile.reset();
     fakeStore.putFile.returns(true);
@@ -295,34 +295,34 @@ describe('Positioner', () => {
     });
 
     it('should obtain the lock when nothing has claimed it', async () => {
-      expect(await positioner.getLock(fakeApp)).to.not.equal(null);
+      expect(await positioner.requestLock(fakeApp)).to.not.equal(null);
     });
 
     it('should obtain two locks for different apps simultaneously', async () => {
-      expect(await positioner.getLock(fakeApp)).to.not.equal(null);
-      expect(await positioner.getLock(fakeApp2)).to.not.equal(null);
+      expect(await positioner.requestLock(fakeApp)).to.not.equal(null);
+      expect(await positioner.requestLock(fakeApp2)).to.not.equal(null);
     });
 
     it('should not issue two locks for the same app simultaneously', async () => {
-      expect(await positioner.getLock(fakeApp)).to.not.equal(null);
-      expect(await positioner.getLock(fakeApp)).to.equal(null);
+      expect(await positioner.requestLock(fakeApp)).to.not.equal(null);
+      expect(await positioner.requestLock(fakeApp)).to.equal(null);
     });
 
     it('should issue two locks for the same app sequentially', async () => {
-      const lock = (await positioner.getLock(fakeApp))!;
+      const lock = (await positioner.requestLock(fakeApp))!;
       expect(lock).to.not.equal(null);
       await positioner.releaseLock(fakeApp, lock);
-      const secondLock = await positioner.getLock(fakeApp);
+      const secondLock = await positioner.requestLock(fakeApp);
       expect(secondLock).to.not.equal(null);
       expect(lock).to.not.equal(secondLock, 'locks should be unique');
     });
 
     it('should not release a lock if the existing lock is not provided', async () => {
-      const lock = (await positioner.getLock(fakeApp))!;
+      const lock = (await positioner.requestLock(fakeApp))!;
       await positioner.releaseLock(fakeApp, 'this-is-not-the-lock');
-      expect(await positioner.getLock(fakeApp)).to.equal(null);
+      expect(await positioner.requestLock(fakeApp)).to.equal(null);
       await positioner.releaseLock(fakeApp, lock);
-      expect(await positioner.getLock(fakeApp)).to.not.equal(null);
+      expect(await positioner.requestLock(fakeApp)).to.not.equal(null);
     });
   });
 });
