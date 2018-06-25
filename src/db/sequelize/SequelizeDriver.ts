@@ -298,6 +298,7 @@ export default class SequelizeDriver extends BaseDriver {
           versionId: dbVersion.id,
         });
         await newFile.save();
+        dbVersion.files.push(newFile);
       }
     }
     const app = (await App.findOne<App>({
