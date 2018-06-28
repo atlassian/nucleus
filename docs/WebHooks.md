@@ -113,7 +113,7 @@ only be called once with multiple new files in the files array.
       fileName: String,
       platform: String,
       arch: String,
-      type: 'installer' | 'udpate'
+      type: 'installer' | 'update'
     }]
   }
 }

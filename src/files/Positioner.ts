@@ -8,7 +8,7 @@ import { initializeYumRepo, addFileToYumRepo } from './utils/yum';
 
 const hat = require('hat');
 
-const VALID_WINDOWS_SUFFIX = ['-full.nupkg', '-delta.nupkg', '.exe'];
+const VALID_WINDOWS_SUFFIX = ['-full.nupkg', '-delta.nupkg', '.exe', '.msi'];
 const VALID_DARWIN_SUFFIX = ['.dmg', '.zip'];
 const CIPHER_MODE = 'aes-256-ctr';
 

@@ -183,7 +183,7 @@ export default class SequelizeDriver extends BaseDriver {
   private typeFromPlatformAndName(platform: NucleusPlatform, fileName: string): FileType {
     switch (platform) {
       case 'win32':
-        if (fileName.endsWith('.exe')) return 'installer';
+        if (fileName.endsWith('.exe') || fileName.endsWith('.msi')) return 'installer';
         break;
       case 'darwin':
         if (fileName.endsWith('.dmg')) return 'installer';

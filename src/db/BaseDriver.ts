@@ -4,7 +4,7 @@ import * as toIco from 'to-ico';
 
 import store from '../files/store';
 
-const IDENTIFYING_SUFFIXES = ['-full.nupkg', '-delta.nupkg', '.exe', '.zip', '.dmg', '.deb', '.rpm'];
+const IDENTIFYING_SUFFIXES = ['-full.nupkg', '-delta.nupkg', '.exe', '.msi', '.zip', '.dmg', '.deb', '.rpm'];
 
 export abstract class IDBDriver {
   public abstract ensureConnected(): Promise<void>;
