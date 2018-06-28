@@ -63,6 +63,14 @@ describe('Positioner', () => {
   let originalDateToString: SinonStub;
   let lock: string;
 
+  before(() => {
+    process.env.NO_NUCLEUS_INDEX = 'true';
+  });
+
+  after(() => {
+    delete process.env.NO_NUCLEUS_INDEX;
+  });
+
   beforeEach(async () => {
     fakeStore = {
       getFile: promiseStub().returns(Buffer.from('')),
@@ -79,6 +87,7 @@ describe('Positioner', () => {
     fakeStore.getFile.onSecondCall().returns(Buffer.from(lock));
     fakeStore.putFile.reset();
     fakeStore.putFile.returns(true);
+    fakeStore.getPublicBaseUrl.returns('https://foo.bar');
   });
 
   afterEach(async () => {
@@ -136,16 +145,69 @@ describe('Positioner', () => {
         handleLinuxUpload.restore();
       });
 
-      after(() => {
+      afterEach(() => {
         // Reset versions to empty array for other tests
         fakeChannel.versions = [];
+      });
+
+      describe('for already uploaded releases -- potentiallyUpdateLatestInstallers', () => {
+        it('should do nothing if the rollout is not 100%', async () => {
+          await positioner.potentiallyUpdateLatestInstallers(lock, fakeApp, fakeChannel, { rollout: 50 } as any);
+          expect(fakeStore.putFile.callCount).to.equal(0);
+        });
+
+        it('should do nothing if the version is not latest', async () => {
+          fakeChannel.versions.push({
+            name: '0.0.3',
+          } as any);
+          await positioner.potentiallyUpdateLatestInstallers(
+            lock,
+            fakeApp,
+            fakeChannel,
+            { name: '0.0.2', rollout: 100 } as any,
+          );
+          expect(fakeStore.putFile.callCount).to.equal(0);
+        });
+
+        it('should copy all installers to the latest spot when rollout=100 and latest', async () => {
+          await positioner.potentiallyUpdateLatestInstallers(
+            lock,
+            fakeApp,
+            fakeChannel, {
+              name: '0.0.2',
+              rollout: 100,
+              files: [{
+                type: 'installer',
+                fileName: 'test.exe',
+                platform: 'win32',
+                arch: 'x64',
+              }, {
+                type: 'update',
+                fileName: 'test.nupkg',
+                platform: 'win32',
+                arch: 'x64',
+              }, {
+                type: 'installer',
+                fileName: 'test.dmg',
+                platform: 'darwin',
+                arch: 'x64',
+              }],
+            } as any,
+          );
+          expect(
+            fakeStore.getFile.getCalls().filter(call => !call.args[0].endsWith('.lock')).length,
+          ).to.equal(2);
+          expect(fakeStore.putFile.callCount).to.equal(2);
+          expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/win32/x64/Fake Slug.exe');
+          expect(fakeStore.putFile.secondCall.args[0]).to.equal('fake_slug/fake_channel_id/darwin/x64/Fake Slug.dmg');
+        });
       });
 
       it('should upload the "Latest" file for a windows installer type release', async () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
           channel: fakeChannel,
-          internalVersion: { name: '0.0.2' } as any,
+          internalVersion: { name: '0.0.2', rollout: 100 } as any,
           file: {
             arch: 'ia32',
             platform: 'win32',
@@ -162,7 +224,7 @@ describe('Positioner', () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
           channel: fakeChannel,
-          internalVersion: { name: '0.0.2' } as any,
+          internalVersion: { name: '0.0.2', rollout: 100 } as any,
           file: {
             arch: 'x64',
             platform: 'darwin',
@@ -179,7 +241,7 @@ describe('Positioner', () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
           channel: fakeChannel,
-          internalVersion: { name: '0.0.2' } as any,
+          internalVersion: { name: '0.0.2', rollout: 100 } as any,
           file: {
             arch: 'ia32',
             platform: 'linux',
@@ -199,7 +261,24 @@ describe('Positioner', () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
           channel: fakeChannel,
-          internalVersion: { name: '0.0.2' } as any,
+          internalVersion: { name: '0.0.2', rollout: 100 } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'linux',
+            fileName: 'thing.deb',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
+        expect(fakeStore.putFile.callCount).to.equal(0);
+      });
+
+      it('should not upload the "Latest" file for any installer type release if it is not at 100% rollout', async () => {
+        fakeChannel.versions = [];
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2', rollout: 99 } as any,
           file: {
             arch: 'ia32',
             platform: 'linux',
@@ -213,11 +292,6 @@ describe('Positioner', () => {
     });
 
     describe('windows', () => {
-      beforeEach(() => {
-        // This is horrible, but it makes the other tests pass without extensive effort
-        (positioner as any).isLatestRelease = () => false;
-      });
-
       it('should not position unknown files in the store', async () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
@@ -386,12 +460,6 @@ describe('Positioner', () => {
     });
 
     describe('darwin', () => {
-      beforeEach(() => {
-        fakeStore.getPublicBaseUrl.returns('https://foo.bar');
-        // This is horrible, but it makes the other tests pass without extensive effort
-        (positioner as any).isLatestRelease = () => false;
-      });
-
       it('should not position unknown files in the store', async () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
@@ -490,7 +558,6 @@ describe('Positioner', () => {
 
       it('should update the RELEASES.json file if it already exits when uploading zips', async () => {
         const fakeBuffer = Buffer.from('my zip');
-        fakeStore.getPublicBaseUrl.returns('https://foo.bar');
         const file1: NucleusFile = {
           arch: 'x64',
           platform: 'darwin',
@@ -537,7 +604,6 @@ describe('Positioner', () => {
 
       it('should not update the "currentRelease" property in the RELEASES.json file if it is higher than the new release', async () => {
         const fakeBuffer = Buffer.from('my zip');
-        fakeStore.getPublicBaseUrl.returns('https://foo.bar');
         const file: NucleusFile = {
           arch: 'x64',
           platform: 'darwin',
@@ -595,11 +661,6 @@ describe('Positioner', () => {
     });
 
     describe('linux', () => {
-      beforeEach(() => {
-        // This is horrible, but it makes the other tests pass without extensive effort
-        (positioner as any).isLatestRelease = () => false;
-      });
-
       // FIXME(MarshallOfSound): Test the linuxHelpers and remove this test
       it.skip('should not position any files in the store', async () => {
         await positioner.handleUpload(lock, {

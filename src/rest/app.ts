@@ -368,7 +368,17 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) 
       });
     }
     d(`User: ${req.user.id} changing a version (${req.body.version}) to have a rollout % of '${req.body.rollout}' for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
-    res.json(await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout));
+    const positioner = new Positioner(store);
+    const updatedChannel = await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout);
+    const updatedVersion = updatedChannel.versions.find(v => v.name === req.body.version);
+    if (updatedVersion) {
+      await positioner.potentiallyUpdateLatestInstallers(
+        req.targetApp,
+        updatedChannel,
+        updatedVersion,
+      );
+    }
+    res.json(updatedChannel);
   }
 }));
 

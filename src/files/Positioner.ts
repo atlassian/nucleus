@@ -67,6 +67,13 @@ export default class Positioner {
     await this.store.deletePath(path.join(app.slug, 'temp', saveString));
   }
 
+  /**
+   * Handle the upload / release of a given file for a given version.  This will do a few things
+   *
+   * * Position the file at the correct place for the given OS and update the required metadata
+   * * Add the file to the _index for the given app/channel/version
+   * * Copy the file to the "latest" position if it is semantically the latest release at 100% rollout
+   */
   public async handleUpload(lock: PositionerLock, {
     app,
     channel,
@@ -99,11 +106,47 @@ export default class Positioner {
         return;
     }
 
-    if (file.type === 'installer' && this.isLatestRelease(internalVersion, channel)) {
+    if (!process.env.NO_NUCLEUS_INDEX) {
+      // Insert into file index for retreival later, this is purely to avoid making assumptions
+      // about file lifetimes for all platforms or assumptions about file positions or assumptions
+      // about file names containing version strings (which are currently enforced but may not be
+      // in the future)
+      await this.store.putFile(this.getIndexKey(app, channel, internalVersion, file), fileData);
+    }
+
+    if (internalVersion.rollout === 100 && this.isLatestRelease(internalVersion, channel)) {
+      await this.copyFileToLatest(app, channel, internalVersion, file);
+    }
+  }
+
+  private getIndexKey(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
+    return path.posix.join(app.slug, channel.id, '_index', version.name, file.platform, file.arch, file.fileName);
+  }
+
+  /**
+   * Given a version for an app / channel check if any of the files should be uploaded to the "latest"
+   * positioning.  This will only occur if the rollout is 100 and the version is the "latest" according
+   * to semver.
+   */
+  public async potentiallyUpdateLatestInstallers(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, internalVersion: NucleusVersion) {
+    if (lock !== await this.currentLock(app)) return;
+    if (internalVersion.rollout !== 100) return;
+    if (!this.isLatestRelease(internalVersion, channel)) return;
+
+    for (const file of internalVersion.files) {
+      await this.copyFileToLatest(app, channel, internalVersion, file);
+    }
+  }
+
+  /**
+   * It is assumed the called has a validated lock
+   */
+  private async copyFileToLatest(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
+    if (file.type === 'installer') {
       const ext = path.extname(file.fileName);
       await this.store.putFile(
         path.posix.join(app.slug, channel.id, file.platform, file.arch, `${app.name}${ext}`),
-        fileData,
+        await this.store.getFile(this.getIndexKey(app, channel, version, file)),
         true,
       );
     }
