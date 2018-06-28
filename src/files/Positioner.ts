@@ -126,35 +126,55 @@ export default class Positioner {
     fileData,
   }: HandlePlatformUploadOpts) {
     const root = path.posix.join(app.slug, channel.id, 'darwin', file.arch);
-    const key = path.posix.join(root, file.fileName);
+    const fileKey = path.posix.join(root, file.fileName);
     if (!VALID_DARWIN_SUFFIX.some(suffix => file.fileName.endsWith(suffix))) {
       d(`Attempted to upload a file for darwin but it had an invalid suffix: ${file.fileName}`);
       return;
     }
 
-    if (await this.store.putFile(key, fileData) && file.fileName.endsWith('.zip')) {
+    if (await this.store.putFile(fileKey, fileData) && file.fileName.endsWith('.zip')) {
       d('Pushed a zip file to the file store so appending release information to RELEASES.json');
       const releasesKey = path.posix.join(root, 'RELEASES.json');
-      const releasesJson: MacOSReleasesStruct = JSON.parse((await this.store.getFile(releasesKey)).toString('utf8') || '{"releases":[]}');
-      if (!releasesJson.currentRelease || semver.gt(internalVersion.name, releasesJson.currentRelease)) {
-        d(`The version '${internalVersion.name}' is considered greater than ${releasesJson.currentRelease} so we're updating currentRelease`);
-        releasesJson.currentRelease = internalVersion.name;
+      const releasesJson: MacOSReleasesStruct = {
+        releases: [],
+        currentRelease: '',
+      };
+      let greatestVersion = internalVersion;
+      for (const testVersion of channel.versions) {
+        if (semver.gt(testVersion.name, greatestVersion.name)) {
+          greatestVersion = testVersion;
+        }
       }
-      const existingRelease = releasesJson.releases.find(release => release.version === internalVersion.name);
-      if (!existingRelease) {
-        d(`Release wasn't in RELEASES.json already so we're adding it`);
-        releasesJson.releases.push({
-          version: internalVersion.name,
-          updateTo: {
-            version: internalVersion.name,
-            pub_date: (new Date()).toString(),
-            notes: '',
-            name: internalVersion.name,
-            url: encodeURI(`${await this.store.getPublicBaseUrl()}/${key}`),
-          },
-        });
-        await this.store.putFile(releasesKey, Buffer.from(JSON.stringify(releasesJson, null, 2), 'utf8'), true);
+
+      d(`The version '${greatestVersion.name}' is considered the greatest release, so setting that to currentRelease`);
+      releasesJson.currentRelease = greatestVersion.name;
+
+      for (const version of channel.versions) {
+        if (!releasesJson.releases.some(release => release.version === version.name)) {
+          const zipFileInVersion = version.files.find(
+            f => f.fileName.endsWith('.zip')  && f.platform === 'darwin' && f.arch === 'x64',
+          );
+          if (!zipFileInVersion) {
+            d(`no zip file in ${version.name}, skipping from RELEASES.json`);
+            continue;
+          }
+          const zipFileKey = path.posix.join(root, zipFileInVersion.fileName);
+          d(`adding version ${version.name} to RELEASES.json`);
+          releasesJson.releases.push({
+            version: version.name,
+            updateTo: {
+              version: version.name,
+              // FIXME: We should store the creation date on the NucleusVersion
+              pub_date: (new Date()).toString(),
+              notes: '',
+              name: version.name,
+              url: encodeURI(`${await this.store.getPublicBaseUrl()}/${zipFileKey}`),
+            },
+          });
+        }
       }
+
+      await this.store.putFile(releasesKey, Buffer.from(JSON.stringify(releasesJson, null, 2), 'utf8'), true);
     }
   }
 

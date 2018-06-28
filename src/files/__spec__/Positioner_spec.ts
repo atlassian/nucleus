@@ -35,6 +35,20 @@ const v1 = {
   }],
 };
 
+const v2 = Object.assign({}, v1);
+v2.releases = Object.assign([], v2.releases);
+v2.releases.push({
+  updateTo: {
+    name: '0.0.3',
+    version: '0.0.3',
+    notes: '',
+    pub_date: 'MyDate',
+    url: 'https://foo.bar/fake_slug/fake_channel_id/darwin/x64/thing2.zip',
+  },
+  version: '0.0.3',
+});
+v2.currentRelease = '0.0.3';
+
 describe('Positioner', () => {
   let fakeStore: {
     getFile: SinonStub;
@@ -272,6 +286,14 @@ describe('Positioner', () => {
     });
 
     describe('darwin', () => {
+      before(() => {
+        fakeChannel.versions = [];
+      });
+
+      beforeEach(() => {
+        fakeStore.getPublicBaseUrl.returns('https://foo.bar');
+      });
+
       it('should not position unknown files in the store', async () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
@@ -323,7 +345,6 @@ describe('Positioner', () => {
 
       it('should position zip files in arch bucket', async () => {
         const fakeBuffer = Buffer.from('my zip');
-        fakeStore.getFile.returns(Promise.resolve(Buffer.from('')));
         await positioner.handleUpload(lock, {
           app: fakeApp,
           channel: fakeChannel,
@@ -345,18 +366,21 @@ describe('Positioner', () => {
 
       it('should create a RELEASES.json file if it doesn\'t exist when uploading zips', async () => {
         const fakeBuffer = Buffer.from('my zip');
-        fakeStore.getFile.returns(Promise.resolve(Buffer.from('')));
-        fakeStore.getPublicBaseUrl.returns('https://foo.bar');
+        const file: NucleusFile = {
+          arch: 'x64',
+          platform: 'darwin',
+          fileName: 'thing.zip',
+          type: 'installer',
+        };
+        fakeChannel.versions.push({
+          name: '0.0.2',
+          files: [file],
+        } as any);
         await positioner.handleUpload(lock, {
+          file,
           app: fakeApp,
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
-          file: {
-            arch: 'x64',
-            platform: 'darwin',
-            fileName: 'thing.zip',
-            type: 'installer',
-          },
           fileData: fakeBuffer,
         });
         expect(fakeStore.putFile.callCount).to.equal(2);
@@ -368,54 +392,70 @@ describe('Positioner', () => {
 
       it('should update the RELEASES.json file if it already exits when uploading zips', async () => {
         const fakeBuffer = Buffer.from('my zip');
-        fakeStore.getFile.returns(Promise.resolve(Buffer.from(JSON.stringify(v1))));
         fakeStore.getPublicBaseUrl.returns('https://foo.bar');
+        const file1: NucleusFile = {
+          arch: 'x64',
+          platform: 'darwin',
+          fileName: 'thing2.zip',
+          type: 'installer',
+        };
+        fakeChannel.versions.push({
+          name: '0.0.3',
+          files: [file1],
+        } as any);
         await positioner.handleUpload(lock, {
           app: fakeApp,
           channel: fakeChannel,
           internalVersion: { name: '0.0.3' } as any,
-          file: {
-            arch: 'x64',
-            platform: 'darwin',
-            fileName: 'thing2.zip',
-            type: 'installer',
-          },
+          file: file1,
           fileData: fakeBuffer,
         });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/RELEASES.json',
         );
-        const expected = Object.assign({}, v1);
-        expected.releases = Object.assign([], expected.releases);
-        expected.releases.push({
-          updateTo: {
-            name: '0.0.3',
-            version: '0.0.3',
-            notes: '',
-            pub_date: 'MyDate',
-            url: 'https://foo.bar/fake_slug/fake_channel_id/darwin/x64/thing2.zip',
-          },
-          version: '0.0.3',
-        });
-        expected.currentRelease = '0.0.3';
-        expect(JSON.parse(fakeStore.putFile.secondCall.args[1].toString())).to.deep.equal(expected);
+        expect(JSON.parse(fakeStore.putFile.secondCall.args[1].toString())).to.deep.equal(v2);
       });
 
-      it('should update not update the "currentRelease" property in the RELEASES.json file if it is higher than the new release', async () => {
+      it('should update the RELEASES.json file even if the version is already in the releases array but not use the new file', async () => {
         const fakeBuffer = Buffer.from('my zip');
-        fakeStore.getFile.returns(Promise.resolve(Buffer.from(JSON.stringify(v1))));
-        fakeStore.getPublicBaseUrl.returns('https://foo.bar');
+        const file: NucleusFile = {
+          arch: 'x64',
+          platform: 'darwin',
+          fileName: 'thing3.zip',
+          type: 'installer',
+        };
+        fakeChannel.versions[0].files.push(file);
         await positioner.handleUpload(lock, {
+          file,
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          fileData: fakeBuffer,
+        });
+        expect(fakeStore.putFile.callCount).to.equal(2);
+        expect(JSON.parse(fakeStore.putFile.secondCall.args[1].toString())).to.deep.equal(v2);
+      });
+
+      it('should not update the "currentRelease" property in the RELEASES.json file if it is higher than the new release', async () => {
+        const fakeBuffer = Buffer.from('my zip');
+        fakeStore.getPublicBaseUrl.returns('https://foo.bar');
+        const file: NucleusFile = {
+          arch: 'x64',
+          platform: 'darwin',
+          fileName: 'thing2.zip',
+          type: 'installer',
+        };
+        // Replace 0.0.3
+        fakeChannel.versions[1] = {
+          name: '0.0.1',
+          files: [file],
+        } as any;
+        await positioner.handleUpload(lock, {
+          file,
           app: fakeApp,
           channel: fakeChannel,
           internalVersion: { name: '0.0.1' } as any,
-          file: {
-            arch: 'x64',
-            platform: 'darwin',
-            fileName: 'thing2.zip',
-            type: 'installer',
-          },
           fileData: fakeBuffer,
         });
         expect(fakeStore.putFile.callCount).to.equal(2);
@@ -448,24 +488,6 @@ describe('Positioner', () => {
             arch: 'x64',
             platform: 'darwin',
             fileName: 'thing2.zip',
-            type: 'installer',
-          },
-          fileData: fakeBuffer,
-        });
-        expect(fakeStore.putFile.callCount).to.equal(1);
-      });
-
-      it('should not update the RELEASES.json file if the version is already in the releases array', async () => {
-        const fakeBuffer = Buffer.from('my zip');
-        fakeStore.getFile.returns(Promise.resolve(Buffer.from(JSON.stringify(v1))));
-        await positioner.handleUpload(lock, {
-          app: fakeApp,
-          channel: fakeChannel,
-          internalVersion: { name: '0.0.2' } as any,
-          file: {
-            arch: 'x64',
-            platform: 'darwin',
-            fileName: 'thing3.zip',
             type: 'installer',
           },
           fileData: fakeBuffer,
