@@ -372,11 +372,14 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) 
     const updatedChannel = await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout);
     const updatedVersion = updatedChannel.versions.find(v => v.name === req.body.version);
     if (updatedVersion) {
-      await positioner.potentiallyUpdateLatestInstallers(
-        req.targetApp,
-        updatedChannel,
-        updatedVersion,
-      );
+      await positioner.withLock(req.targetApp, async (lock) => {
+        await positioner.potentiallyUpdateLatestInstallers(
+          lock,
+          req.targetApp,
+          updatedChannel,
+          updatedVersion,
+        );
+      });
     }
     res.json(updatedChannel);
   }
