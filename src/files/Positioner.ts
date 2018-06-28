@@ -67,66 +67,89 @@ export default class Positioner {
     await this.store.deletePath(path.join(app.slug, 'temp', saveString));
   }
 
-  public async handleUpload(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, version: string, arch: string, platform: string, fileName: string, data: Buffer) {
+  public async handleUpload(lock: PositionerLock, {
+    app,
+    channel,
+    internalVersion,
+    file,
+    fileData,
+  }: {
+    app: NucleusApp;
+    channel: NucleusChannel;
+    internalVersion: NucleusVersion,
+    file: NucleusFile;
+    fileData: Buffer;
+  }) {
     // Validate arch
     if (lock !== await this.currentLock(app)) return;
-    if (arch !== 'ia32' && arch !== 'x64') return;
-    d(`Handling upload (${fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${version}) on platform/arch (${platform}/${arch})`);
+    if (file.arch !== 'ia32' && file.arch !== 'x64') return;
+    d(`Handling upload (${file.fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${internalVersion.name}) on platform/arch (${file.platform}/${file.arch})`);
 
-    switch (platform) {
+    switch (file.platform) {
       case 'win32':
-        return await this.handleWindowsUpload(app, channel, version, arch, fileName, data);
+        return await this.handleWindowsUpload({ app, channel, internalVersion, file, fileData });
       case 'darwin':
-        return await this.handleDarwinUpload(app, channel, version, arch, fileName, data);
+        return await this.handleDarwinUpload({ app, channel, internalVersion, file, fileData });
       case 'linux':
-        return await this.handleLinuxUpload(app, channel, version, arch, fileName, data);
+        return await this.handleLinuxUpload({ app, channel, internalVersion, file, fileData });
     }
   }
 
-  protected async handleWindowsUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
-    const root = path.posix.join(app.slug, channel.id, 'win32', arch);
-    const key = path.posix.join(root, fileName);
-    if (!VALID_WINDOWS_SUFFIX.some(suffix => fileName.endsWith(suffix))) {
-      d(`Attempted to upload a file for win32 but it had an invalid suffix: ${fileName}`);
+  protected async handleWindowsUpload({
+    app,
+    channel,
+    file,
+    fileData,
+  }: HandlePlatformUploadOpts) {
+    const root = path.posix.join(app.slug, channel.id, 'win32', file.arch);
+    const key = path.posix.join(root, file.fileName);
+    if (!VALID_WINDOWS_SUFFIX.some(suffix => file.fileName.endsWith(suffix))) {
+      d(`Attempted to upload a file for win32 but it had an invalid suffix: ${file.fileName}`);
       return;
     }
 
-    if (await this.store.putFile(key, data) && fileName.endsWith('.nupkg')) {
+    if (await this.store.putFile(key, fileData) && file.fileName.endsWith('.nupkg')) {
       d('Pushed a nupkg file to the file store so appending release information to RELEASES');
       const releasesKey = path.posix.join(root, 'RELEASES');
       let RELEASES = (await this.store.getFile(releasesKey)).toString('utf8');
-      const hash = crypto.createHash('SHA1').update(data).digest('hex').toUpperCase();
-      RELEASES += `${RELEASES.length > 0 ? '\n' : ''}${hash} ${fileName} ${data.byteLength}`;
+      const hash = crypto.createHash('SHA1').update(fileData).digest('hex').toUpperCase();
+      RELEASES += `${RELEASES.length > 0 ? '\n' : ''}${hash} ${file.fileName} ${fileData.byteLength}`;
       await this.store.putFile(releasesKey, Buffer.from(RELEASES, 'utf8'), true);
     }
   }
 
-  protected async handleDarwinUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
-    const root = path.posix.join(app.slug, channel.id, 'darwin', arch);
-    const key = path.posix.join(root, fileName);
-    if (!VALID_DARWIN_SUFFIX.some(suffix => fileName.endsWith(suffix))) {
-      d(`Attempted to upload a file for darwin but it had an invalid suffix: ${fileName}`);
+  protected async handleDarwinUpload({
+    app,
+    channel,
+    internalVersion,
+    file,
+    fileData,
+  }: HandlePlatformUploadOpts) {
+    const root = path.posix.join(app.slug, channel.id, 'darwin', file.arch);
+    const key = path.posix.join(root, file.fileName);
+    if (!VALID_DARWIN_SUFFIX.some(suffix => file.fileName.endsWith(suffix))) {
+      d(`Attempted to upload a file for darwin but it had an invalid suffix: ${file.fileName}`);
       return;
     }
 
-    if (await this.store.putFile(key, data) && fileName.endsWith('.zip')) {
+    if (await this.store.putFile(key, fileData) && file.fileName.endsWith('.zip')) {
       d('Pushed a zip file to the file store so appending release information to RELEASES.json');
       const releasesKey = path.posix.join(root, 'RELEASES.json');
       const releasesJson: MacOSReleasesStruct = JSON.parse((await this.store.getFile(releasesKey)).toString('utf8') || '{"releases":[]}');
-      if (!releasesJson.currentRelease || semver.gt(version, releasesJson.currentRelease)) {
-        d(`The version '${version}' is considered greater than ${releasesJson.currentRelease} so we're updating currentRelease`);
-        releasesJson.currentRelease = version;
+      if (!releasesJson.currentRelease || semver.gt(internalVersion.name, releasesJson.currentRelease)) {
+        d(`The version '${internalVersion.name}' is considered greater than ${releasesJson.currentRelease} so we're updating currentRelease`);
+        releasesJson.currentRelease = internalVersion.name;
       }
-      const existingRelease = releasesJson.releases.find(release => release.version === version);
+      const existingRelease = releasesJson.releases.find(release => release.version === internalVersion.name);
       if (!existingRelease) {
         d(`Release wasn't in RELEASES.json already so we're adding it`);
         releasesJson.releases.push({
-          version,
+          version: internalVersion.name,
           updateTo: {
-            version,
+            version: internalVersion.name,
             pub_date: (new Date()).toString(),
             notes: '',
-            name: version,
+            name: internalVersion.name,
             url: encodeURI(`${await this.store.getPublicBaseUrl()}/${key}`),
           },
         });
@@ -135,13 +158,19 @@ export default class Positioner {
     }
   }
 
-  protected async handleLinuxUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
-    if (fileName.endsWith('.rpm')) {
+  protected async handleLinuxUpload({
+    app,
+    channel,
+    internalVersion,
+    file,
+    fileData,
+  }: HandlePlatformUploadOpts) {
+    if (file.fileName.endsWith('.rpm')) {
       d('Adding rpm file to yum repo');
-      await addFileToYumRepo(this.store, app, channel, fileName, data, version);
-    } else if (fileName.endsWith('.deb')) {
+      await addFileToYumRepo(this.store, { app, channel, file, fileData, internalVersion });
+    } else if (file.fileName.endsWith('.deb')) {
       d('Adding deb file to apt repo');
-      await addFileToAptRepo(this.store, app, channel, fileName, data, version);
+      await addFileToAptRepo(this.store, { app, channel, file, fileData, internalVersion });
     } else {
       console.warn('Will not upload unknown linux file');
     }

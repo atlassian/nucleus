@@ -270,11 +270,22 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
     storedFileNames = await driver.registerVersionFiles(save);
     d(`Tested files: [${save.filenames.join(', ')}] but stored: [${storedFileNames.join(', ')}]`);
 
-    for (const fileName of storedFileNames) {
-      d(`Releasing file: ${fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
+    // Get up to date channel
+    const upToDateChannel = (await driver.getChannel(req.targetApp, req.params.channelId))!;
+    const storedVersion = upToDateChannel.versions.find(v => v.name === save.version)!;
+    const storedFiles = storedVersion.files.filter(f => storedFileNames.includes(f.fileName));
 
-      const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, fileName, save.cipherPassword);
-      await positioner.handleUpload(lock, req.targetApp, channel, save.version, save.arch, save.platform, fileName, data);
+    for (const file of storedFiles) {
+      d(`Releasing file: ${file.fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
+
+      const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, file.fileName, save.cipherPassword);
+      await positioner.handleUpload(lock, {
+        file,
+        app: req.targetApp,
+        channel: upToDateChannel,
+        internalVersion: storedVersion,
+        fileData: data,
+      });
     }
     await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
   }))) {

@@ -95,7 +95,13 @@ export const initializeAptRepo = async (store: IFileStore, app: NucleusApp, chan
   });
 };
 
-export const addFileToAptRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer, version: string) => {
+export const addFileToAptRepo = async (store: IFileStore, {
+  app,
+  channel,
+  internalVersion,
+  file,
+  fileData,
+}: HandlePlatformUploadOpts) => {
   await withTmpDir(async (tmpDir) => {
     const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'debian');
     await syncStoreToDirectory(
@@ -104,11 +110,11 @@ export const addFileToAptRepo = async (store: IFileStore, app: NucleusApp, chann
       tmpDir,
     );
     await fs.mkdirs(path.resolve(tmpDir, 'binary'));
-    const binaryPath = path.resolve(tmpDir, 'binary', `${version}-${fileName}`);
+    const binaryPath = path.resolve(tmpDir, 'binary', `${internalVersion.name}-${file.fileName}`);
     if (await fs.pathExists(binaryPath)) {
       throw new Error('Uploaded a duplicate file');
     }
-    await fs.writeFile(binaryPath, data);
+    await fs.writeFile(binaryPath, fileData);
     await writeAptMetadata(tmpDir, app);
     await syncDirectoryToStore(
       store,

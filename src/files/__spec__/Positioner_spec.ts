@@ -71,25 +71,69 @@ describe('Positioner', () => {
   });
 
   it('should not position unknown arches', async () => {
-    await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'magicBit', 'win32', 'thing.exe', Buffer.from(''));
+    await positioner.handleUpload(lock, {
+      app: fakeApp,
+      channel: fakeChannel,
+      internalVersion: { name: '0.0.2' } as any,
+      file: {
+        arch: 'magicBit' as any,
+        platform: 'win32',
+        fileName: 'thing.exe',
+        type: 'installer',
+      },
+      fileData: Buffer.from(''),
+    });
     expect(fakeStore.putFile.callCount).to.equal(0);
   });
 
   it('should not position unknown platfroms', async () => {
-    await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'chromeOS', 'thing.apk', Buffer.from(''));
+    await positioner.handleUpload(lock, {
+      app: fakeApp,
+      channel: fakeChannel,
+      internalVersion: { name: '0.0.2' } as any,
+      file: {
+        arch: 'x64',
+        platform: 'chromeOS' as any,
+        fileName: 'thing.apk',
+        type: 'installer',
+      },
+      fileData: Buffer.from(''),
+    });
     expect(fakeStore.putFile.callCount).to.equal(0);
   });
 
   describe('positioning OS files', () => {
     describe('windows', () => {
       it('should not position unknown files in the store', async () => {
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'win32', 'thing.wut', Buffer.from(''));
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing.wet',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
         expect(fakeStore.putFile.callCount).to.equal(0);
       });
 
       it('should position exe files in arch bucket', async () => {
         const fakeBuffer = Buffer.from('my exe');
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'win32', 'thing.exe', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing.exe',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(1);
         expect(fakeStore.putFile.firstCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/thing.exe',
@@ -100,13 +144,35 @@ describe('Positioner', () => {
       it('should position different arches in separate key paths', async () => {
         const firstBuffer = Buffer.from('my exe');
         const secondBuffer = Buffer.from('my other exe');
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'win32', 'thing.exe', firstBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing.exe',
+            type: 'installer',
+          },
+          fileData: firstBuffer,
+        });
         expect(fakeStore.putFile.firstCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/thing.exe',
         );
         expect(fakeStore.putFile.firstCall.args[1]).to.equal(firstBuffer);
         fakeStore.getFile.onCall(2).returns(Buffer.from(lock));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'win32', 'thing.exe', secondBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'win32',
+            fileName: 'thing.exe',
+            type: 'installer',
+          },
+          fileData: secondBuffer,
+        });
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/x64/thing.exe',
         );
@@ -116,7 +182,18 @@ describe('Positioner', () => {
       it('should position nupkg files in arch bucket', async () => {
         const fakeBuffer = Buffer.from('my nupkg');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from('')));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'win32', 'thing-full.nupkg', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing-full.nupkg',
+            type: 'update',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.firstCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/thing-full.nupkg',
@@ -128,7 +205,18 @@ describe('Positioner', () => {
       it('should update the RELEASES file with correct hash and filename for all nupkg uploads', async () => {
         const fakeBuffer = Buffer.from('my nupkg');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from('')));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'win32', 'thing-full.nupkg', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing-full.nupkg',
+            type: 'update',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/RELEASES',
@@ -142,7 +230,18 @@ describe('Positioner', () => {
       it('should append to the existing RELEASES file if available', async () => {
         const fakeBuffer = Buffer.from('my delta nupkg');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from('0F2320FC3B29E1CD9F989DBF547BCD4D21D3BD12 thing-full.nupkg 8')));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'win32', 'thing-delta.nupkg', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing-delta.nupkg',
+            type: 'update',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/RELEASES',
@@ -156,21 +255,65 @@ describe('Positioner', () => {
       it('should not update the RELEASES file if the nupkg is already in the bucket', async () => {
         const fakeBuffer = Buffer.from('my delta nupkg');
         fakeStore.putFile.returns(Promise.resolve(false));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'win32', 'thing-delta.nupkg', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing-delta.nupkg',
+            type: 'update',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(1);
       });
     });
 
     describe('darwin', () => {
       it('should not position unknown files in the store', async () => {
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'darwin', 'thing.exe', Buffer.from(''));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'darwin', 'thing.lel', Buffer.from(''));
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing.exe',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
+        await positioner.handleUpload(lock,{
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing.lel',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
         expect(fakeStore.putFile.callCount).to.equal(0);
       });
 
       it('should position dmg files in arch bucket', async () => {
         const fakeBuffer = Buffer.from('my dmg');
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'darwin', 'thing.dmg', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing.dmg',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(1);
         expect(fakeStore.putFile.firstCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/thing.dmg',
@@ -181,7 +324,18 @@ describe('Positioner', () => {
       it('should position zip files in arch bucket', async () => {
         const fakeBuffer = Buffer.from('my zip');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from('')));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'darwin', 'thing.zip', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing.zip',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.firstCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/thing.zip',
@@ -193,7 +347,18 @@ describe('Positioner', () => {
         const fakeBuffer = Buffer.from('my zip');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from('')));
         fakeStore.getPublicBaseUrl.returns('https://foo.bar');
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'darwin', 'thing.zip', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing.zip',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/RELEASES.json',
@@ -205,7 +370,18 @@ describe('Positioner', () => {
         const fakeBuffer = Buffer.from('my zip');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from(JSON.stringify(v1))));
         fakeStore.getPublicBaseUrl.returns('https://foo.bar');
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.3', 'x64', 'darwin', 'thing2.zip', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.3' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing2.zip',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/RELEASES.json',
@@ -230,7 +406,18 @@ describe('Positioner', () => {
         const fakeBuffer = Buffer.from('my zip');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from(JSON.stringify(v1))));
         fakeStore.getPublicBaseUrl.returns('https://foo.bar');
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.1', 'x64', 'darwin', 'thing2.zip', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.1' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing2.zip',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(2);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/RELEASES.json',
@@ -253,14 +440,36 @@ describe('Positioner', () => {
       it('should not update the RELEASES.json file if the zip already existed on the bucket', async () => {
         const fakeBuffer = Buffer.from('my zip');
         fakeStore.putFile.returns(Promise.resolve(false));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'darwin', 'thing2.zip', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing2.zip',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(1);
       });
 
       it('should not update the RELEASES.json file if the version is already in the releases array', async () => {
         const fakeBuffer = Buffer.from('my zip');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from(JSON.stringify(v1))));
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'x64', 'darwin', 'thing2.zip', fakeBuffer);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing3.zip',
+            type: 'installer',
+          },
+          fileData: fakeBuffer,
+        });
         expect(fakeStore.putFile.callCount).to.equal(1);
       });
     });
@@ -268,7 +477,18 @@ describe('Positioner', () => {
     describe('linux', () => {
       // FIXME(MarshallOfSound): Test the linuxHelpers and remove this test
       it.skip('should not position any files in the store', async () => {
-        await positioner.handleUpload(lock, fakeApp, fakeChannel, '0.0.2', 'ia32', 'linux', 'thing.deb', Buffer.from(''));
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'linux',
+            fileName: 'thing.dev',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
         expect(fakeStore.putFile.callCount).to.equal(0);
       });
     });

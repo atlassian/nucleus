@@ -122,16 +122,18 @@ interface NucleusChannel {
   versions: NucleusVersion[];
 }
 
+interface NucleusFile {
+  fileName: string;
+  arch: string;
+  platform: NucleusPlatform;
+  type: FileType;
+}
+
 interface NucleusVersion {
   name: string;
   dead: boolean;
   rollout: number;
-  files: {
-    fileName: string;
-    arch: string;
-    platform: NucleusPlatform;
-    type: FileType;
-  }[];
+  files: NucleusFile[];
 }
 
 interface ITemporarySave {
@@ -143,6 +145,14 @@ interface ITemporarySave {
   platform: NucleusPlatform;
   date: Date;
   cipherPassword: string;
+}
+
+interface HandlePlatformUploadOpts {
+  app: NucleusApp;
+  channel: NucleusChannel;
+  internalVersion: NucleusVersion;
+  file: NucleusFile;
+  fileData: Buffer;
 }
 
 interface IFileStore {
