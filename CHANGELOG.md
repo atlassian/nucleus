@@ -1,3 +1,9 @@
+#### 0.8.3 (2018-06-28)
+
+##### Performance Improvements
+
+* reduce docker image size by ~500MB (34748858)
+
 #### 0.8.1 (2018-05-24)
 
 ##### Bug Fixes
