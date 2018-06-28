@@ -367,6 +367,17 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) 
         error: 'Rollout % has to be a number',
       });
     }
+    const version = channel.versions.find(v => v.name === req.body.version);
+    if (!version) {
+      return res.status(400).json({
+        error: 'Version provided was not found',
+      });
+    }
+    if (version.rollout === 100) {
+      return res.status(400).json({
+        error: 'You cannot change the rollout of a version once it has reached 100%',
+      });
+    }
     d(`User: ${req.user.id} changing a version (${req.body.version}) to have a rollout % of '${req.body.rollout}' for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
     const positioner = new Positioner(store);
     const updatedChannel = await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout);
