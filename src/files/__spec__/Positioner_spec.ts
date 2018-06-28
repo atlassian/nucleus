@@ -58,6 +58,7 @@ describe('Positioner', () => {
     getPublicBaseUrl: SinonStub;
     deletePath: SinonStub;
     listFiles: SinonStub;
+    hasFile: SinonStub;
   };
   let positioner: Positioner;
   let originalDateToString: SinonStub;
@@ -78,6 +79,7 @@ describe('Positioner', () => {
       putFile: promiseStub(),
       deletePath: promiseStub(),
       listFiles: promiseStub().returns([]),
+      hasFile: promiseStub().returns(true),
     };
     fakeStore.putFile.returns(Promise.resolve(true));
     positioner = new Positioner(fakeStore);

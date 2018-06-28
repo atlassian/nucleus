@@ -157,6 +157,7 @@ interface HandlePlatformUploadOpts {
 
 interface IFileStore {
   putFile(key: string, data: Buffer, overwriteExisting?: boolean): Promise<boolean>;
+  hasFile(key: string): Promise<boolean>;
   getFile(key: string): Promise<Buffer>;
   getPublicBaseUrl(): Promise<string>;
   deletePath(key: string): Promise<void>;

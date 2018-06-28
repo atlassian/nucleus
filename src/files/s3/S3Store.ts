@@ -15,16 +15,21 @@ AWS.config.credentials = new AWS.EC2MetadataCredentials({
 export default class S3Store implements IFileStore {
   constructor(private s3Config = config.s3) {}
 
-  public async putFile(key: string, data: Buffer, overwrite = false) {
-    d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
+  public async hasFile(key: string) {
     const s3 = new AWS.S3();
-    const keyExists = async () => await new Promise<boolean>(resolve => s3.headObject({
+    return await new Promise<boolean>(resolve => s3.headObject({
       Bucket: this.s3Config.bucketName,
       Key: key,
     }, (err) => {
       if (err && err.code === 'NotFound') return resolve(false);
       resolve(true);
     }));
+  }
+
+  public async putFile(key: string, data: Buffer, overwrite = false) {
+    d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
+    const s3 = new AWS.S3();
+    const keyExists = async () => await this.hasFile(key);
     let wrote = false;
     if (overwrite || !await keyExists()) {
       d(`Deciding to write file (either because overwrite is enabled or the key didn't exist)`);

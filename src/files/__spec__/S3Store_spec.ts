@@ -63,8 +63,8 @@ describe('S3Store', () => {
   describe('putFile', () => {
     it('should write files to the correct key', async () => {
       let s3: SinonStubbedInstance<AWS.S3>;
-      s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
-        s3 = instance;
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+        if (!s3) s3 = instance;
         instance.headObject.callsArgWith(1, { code: 'NotFound' });
         instance.putObject.callsArgWith(1, null);
       });
@@ -75,7 +75,7 @@ describe('S3Store', () => {
 
     it('should not overwrite files by default', async () => {
       let s3: SinonStubbedInstance<AWS.S3>;
-      s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
         s3 = instance;
         instance.headObject.callsArgWith(1, null);
         instance.putObject.callsArgWith(1, null);
@@ -86,7 +86,7 @@ describe('S3Store', () => {
 
     it('should overwrite files when overwrite = true', async () => {
       let s3: SinonStubbedInstance<AWS.S3>;
-      s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
         s3 = instance;
         instance.headObject.callsArgWith(1, null);
         instance.putObject.callsArgWith(1, null);
@@ -97,7 +97,7 @@ describe('S3Store', () => {
 
     it('should put objects with appropriate read config', async () => {
       let s3: SinonStubbedInstance<AWS.S3>;
-      s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
         s3 = instance;
         instance.headObject.callsArgWith(1, null);
         instance.putObject.callsArgWith(1, null);
@@ -117,7 +117,7 @@ describe('S3Store', () => {
         distributionId: '0id',
         publicUrl: 'https://this.is.custom/lel',
       };
-      s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
         instance.headObject.callsArgWith(1, null);
         instance.putObject.callsArgWith(1, null);
       });
@@ -138,7 +138,7 @@ describe('S3Store', () => {
   describe('getFile', () => {
     it('should default to empty string buffer', async () => {
       let s3: SinonStubbedInstance<AWS.S3>;
-      s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
         s3 = instance;
         instance.getObject.callsArgWith(1, { error: true });
       });
@@ -148,10 +148,32 @@ describe('S3Store', () => {
     });
 
     it('should load the file contents if it exists', async () => {
-      s3Watcher.once('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
         instance.getObject.callsArgWith(1, null, { Body: Buffer.from('thisIsValue') });
       });
       expect((await store.getFile('key')).toString()).to.equal('thisIsValue');
+    });
+  });
+
+  describe('hasFile', () => {
+    it('should return true when headObject resolves', async () => {
+      let s3: SinonStubbedInstance<AWS.S3>;
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+        s3 = instance;
+        instance.headObject.callsArgWith(1, null);
+      });
+      expect(await store.hasFile('myKey')).to.equal(true);
+      expect(s3!.headObject.callCount).to.equal(1);
+    });
+
+    it('should return false when headObject calls back with an error', async () => {
+      let s3: SinonStubbedInstance<AWS.S3>;
+      s3Watcher.on('new', (instance: SinonStubbedInstance<AWS.S3>) => {
+        s3 = instance;
+        instance.headObject.callsArgWith(1, { code: 'NotFound' });
+      });
+      expect(await store.hasFile('myKey')).to.equal(false);
+      expect(s3!.headObject.callCount).to.equal(1);
     });
   });
 });

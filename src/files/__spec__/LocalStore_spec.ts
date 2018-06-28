@@ -68,4 +68,20 @@ describe('LocalStore', () => {
       expect((await store.getFile('key')).toString()).to.equal('existing');
     });
   });
+
+  describe('hasFile', () => {
+    it('should return true when the file exists', async () => {
+      await store.putFile('key', Buffer.from(''));
+      expect(await store.hasFile('key')).to.equal(true);
+    });
+
+    it('should return false when the file does not exist', async () => {
+      expect(await store.hasFile('key')).to.equal(false);
+    });
+
+    it('should return false when the path exists but is not a file', async () => {
+      await store.putFile('dir/key', Buffer.from(''));
+      expect(await store.hasFile('dir')).to.equal(false);
+    });
+  });
 });
