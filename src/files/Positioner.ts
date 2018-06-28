@@ -87,12 +87,31 @@ export default class Positioner {
 
     switch (file.platform) {
       case 'win32':
-        return await this.handleWindowsUpload({ app, channel, internalVersion, file, fileData });
+        await this.handleWindowsUpload({ app, channel, internalVersion, file, fileData });
+        break;
       case 'darwin':
-        return await this.handleDarwinUpload({ app, channel, internalVersion, file, fileData });
+        await this.handleDarwinUpload({ app, channel, internalVersion, file, fileData });
+        break;
       case 'linux':
-        return await this.handleLinuxUpload({ app, channel, internalVersion, file, fileData });
+        await this.handleLinuxUpload({ app, channel, internalVersion, file, fileData });
+        break;
+      default:
+        return;
     }
+
+    if (file.type === 'installer' && this.isLatestRelease(internalVersion, channel)) {
+      const ext = path.extname(file.fileName);
+      await this.store.putFile(
+        path.posix.join(app.slug, channel.id, file.platform, file.arch, `${app.name}${ext}`),
+        fileData,
+        true,
+      );
+    }
+  }
+
+  private isLatestRelease(version: NucleusVersion, channel: NucleusChannel) {
+    const greaterVersion = channel.versions.find(v => semver.gt(v.name, version.name));
+    return !greaterVersion;
   }
 
   protected async handleWindowsUpload({

@@ -6,6 +6,7 @@ import Positioner from '../Positioner';
 const fakeApp: NucleusApp = {
   id: 'fake_id',
   slug: 'fake_slug',
+  name: 'Fake Slug',
 } as any;
 const fakeApp2: NucleusApp = {
   id: 'fake_id_2',
@@ -13,6 +14,7 @@ const fakeApp2: NucleusApp = {
 } as any;
 const fakeChannel: NucleusChannel = {
   id: 'fake_channel_id',
+  versions: [],
 } as any;
 
 const promiseStub = () => {
@@ -117,7 +119,105 @@ describe('Positioner', () => {
   });
 
   describe('positioning OS files', () => {
+    describe('for any OS', () => {
+      let handleWindowsUpload: SinonStub;
+      let handleDarwinUpload: SinonStub;
+      let handleLinuxUpload: SinonStub;
+
+      beforeEach(() => {
+        handleWindowsUpload = stub(positioner as any, 'handleWindowsUpload');
+        handleDarwinUpload = stub(positioner as any, 'handleDarwinUpload');
+        handleLinuxUpload = stub(positioner as any, 'handleLinuxUpload');
+      });
+
+      afterEach(() => {
+        handleWindowsUpload.restore();
+        handleDarwinUpload.restore();
+        handleLinuxUpload.restore();
+      });
+
+      after(() => {
+        // Reset versions to empty array for other tests
+        fakeChannel.versions = [];
+      });
+
+      it('should upload the "Latest" file for a windows installer type release', async () => {
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'win32',
+            fileName: 'thing.exe',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
+        expect(fakeStore.putFile.callCount).to.equal(1);
+        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/win32/ia32/Fake Slug.exe');
+      });
+
+      it('should upload the "Latest" file for a darwin installer type release', async () => {
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'x64',
+            platform: 'darwin',
+            fileName: 'thing.dmg',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
+        expect(fakeStore.putFile.callCount).to.equal(1);
+        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/darwin/x64/Fake Slug.dmg');
+      });
+
+      it('should upload the "Latest" file for a linux installer type release', async () => {
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'linux',
+            fileName: 'thing.deb',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
+        expect(fakeStore.putFile.callCount).to.equal(1);
+        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/linux/ia32/Fake Slug.deb');
+      });
+
+      it('should not upload the "Latest" file for any installer type release if it is not the latest release', async () => {
+        fakeChannel.versions.push({
+          name: '0.0.3',
+        } as any);
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2' } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'linux',
+            fileName: 'thing.deb',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
+        expect(fakeStore.putFile.callCount).to.equal(0);
+      });
+    });
+
     describe('windows', () => {
+      beforeEach(() => {
+        // This is horrible, but it makes the other tests pass without extensive effort
+        (positioner as any).isLatestRelease = () => false;
+      });
+
       it('should not position unknown files in the store', async () => {
         await positioner.handleUpload(lock, {
           app: fakeApp,
@@ -286,12 +386,10 @@ describe('Positioner', () => {
     });
 
     describe('darwin', () => {
-      before(() => {
-        fakeChannel.versions = [];
-      });
-
       beforeEach(() => {
         fakeStore.getPublicBaseUrl.returns('https://foo.bar');
+        // This is horrible, but it makes the other tests pass without extensive effort
+        (positioner as any).isLatestRelease = () => false;
       });
 
       it('should not position unknown files in the store', async () => {
@@ -497,6 +595,11 @@ describe('Positioner', () => {
     });
 
     describe('linux', () => {
+      beforeEach(() => {
+        // This is horrible, but it makes the other tests pass without extensive effort
+        (positioner as any).isLatestRelease = () => false;
+      });
+
       // FIXME(MarshallOfSound): Test the linuxHelpers and remove this test
       it.skip('should not position any files in the store', async () => {
         await positioner.handleUpload(lock, {
