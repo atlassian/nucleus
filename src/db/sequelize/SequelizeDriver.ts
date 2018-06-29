@@ -400,7 +400,10 @@ export default class SequelizeDriver extends BaseDriver {
         appId: parseInt(app.id!, 10),
         stringId: channel.id,
       },
-      include: [Version],
+      include: [{
+        model: Version,
+        include: [File],
+      }],
     });
     if (!rawChannel || !rawChannel.versions || rollout < 0 || rollout > 100) return (await this.getChannel(app, channel.id!))!;
     for (const version of rawChannel.versions) {
