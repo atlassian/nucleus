@@ -18,6 +18,7 @@ import migrationRouter from './rest/migration';
 import { authenticateRouter, setupApp } from './rest/auth';
 import { isGpgKeyValid } from './files/utils/gpg';
 import { registerMigrations } from './migrations';
+import { MigrationStore } from './migrations/BaseMigration';
 
 const d = debug('nucleus');
 const a = createA(d);
@@ -79,10 +80,15 @@ restRouter.use('/admin', (req, res, next) => {
 setupApp(app);
 
 restRouter.get('/config', a(async (req, res) => {
+  const migrations = (await driver.getMigrations()).map(m => (m as any).get());
+  for (const migration of migrations) {
+    (migration as any).dependsOn = MigrationStore.get(migration.key)!.dependsOn;
+  }
+
   res.json({
+    migrations,
     user: req.user,
     baseUpdateUrl: await store.getPublicBaseUrl(),
-    migrations: await driver.getMigrations(),
   });
 }));
 

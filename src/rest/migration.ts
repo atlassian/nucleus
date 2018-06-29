@@ -27,7 +27,16 @@ migrationRouter.use('/:key', requireAdmin, a(async (req, res, next) => {
 }));
 
 migrationRouter.get('/:key', a(async (req, res) => {
-  res.json(await req.migration.migrator.getItems());
+  const internalMigrations = await driver.getMigrations();
+  const migration: BaseMigration<any> = req.migration.migrator;
+  if (internalMigrations.find(m => migration.dependsOn.includes(m.key) && !m.complete)) {
+    return res.status(401).json({
+      error: 'This migration depends on migrations that have not yet completed',
+    });
+  }
+
+  const items = await migration.getItems();
+  res.json(items);
 }));
 
 migrationRouter.post('/:key', a(async (req, res) => {

@@ -35,6 +35,7 @@ export class MigrationStore {
 export default abstract class BaseMigration<T> {
   abstract key: string;
   abstract friendlyName: string;
+  dependsOn: string[] = [];
   private dMem: debug.IDebugger | null = null;
 
   protected get d() {

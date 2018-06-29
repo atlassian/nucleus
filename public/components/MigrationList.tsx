@@ -121,6 +121,10 @@ class MigrationList extends React.PureComponent<MigrationListComponentProps & Mi
     });
   }
 
+  private hasPendingDep = (migration: any) => {
+    return (this.pending as any[]).find(m => migration.dependsOn.indexOf(m.key) !== -1);
+  }
+
   private renderPendingMigration = (migration: NucleusMigration) => {
     const done = this.state.migrationItems ? this.state.migrationItems.filter(i => i.done).length : 0;
     const total = this.state.migrationItems ? this.state.migrationItems.length : 0;
@@ -128,6 +132,12 @@ class MigrationList extends React.PureComponent<MigrationListComponentProps & Mi
       <div key={migration.key} className={styles.migrationContainer}>
         <div className={styles.migration}>
           <b>{migration.friendlyName}</b>
+          {
+            migration.dependsOn.length > 0
+            ? (
+              <div><i>Depends On: {migration.dependsOn.map(k => this.props.migrations.items.find(m => m.key === k)!.friendlyName).join(', ')}</i></div>
+            ) : null
+          }
           {
             this.state.migrationItems
             ? (
@@ -157,7 +167,7 @@ class MigrationList extends React.PureComponent<MigrationListComponentProps & Mi
             <AkButton
               appearance="primary"
               onClick={this.startMigration(migration)}
-              isDisabled={!!this.state.activeMigration || this.state.stopping}
+              isDisabled={!!this.state.activeMigration || this.state.stopping || this.hasPendingDep(migration)}
             >
               Start
             </AkButton>
