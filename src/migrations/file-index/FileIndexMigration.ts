@@ -9,8 +9,9 @@ import { IDBDriver } from '../../db/BaseDriver';
 interface FileIndexMigrationItem {
   indexKey: string;
   originalKey: string;
-  file: NucleusFile;
 }
+
+const SIMULTANEOUS_FETCHES = 5;
 
 export default class FileIndexMigration extends BaseMigration<FileIndexMigrationItem> {
   key = 'file-index';
@@ -45,7 +46,6 @@ export default class FileIndexMigration extends BaseMigration<FileIndexMigration
               data: {
                 indexKey,
                 originalKey,
-                file,
               },
             }));
           }
@@ -55,14 +55,14 @@ export default class FileIndexMigration extends BaseMigration<FileIndexMigration
 
     const items: MigrationItem<FileIndexMigrationItem>[] = [];
     
-    const runOnItem = async () => {
+    const fetchItem = async () => {
       if (itemFetchers.length === 0) return;
       const fetcher = itemFetchers.pop()!;
 
       items.push(await fetcher());
-      await runOnItem();
+      await fetchItem();
     };
-    await Promise.all((Array(5)).map(() => runOnItem()));
+    await Promise.all((Array(SIMULTANEOUS_FETCHES)).fill(null).map(() => fetchItem()));
 
     return items;
   }

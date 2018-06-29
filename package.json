@@ -22,7 +22,7 @@
     "start-server": "node lib/index.js",
     "start-server-dev": "nodemon --watch src --exec \"npm run build-server && cross-env DEBUG=nucleus* npm run start-server\" -e ts",
     "start-static": "make-dir .files && serve .files --port 9999 --silent",
-    "test": "mocha --compilers ts:ts-node/register src/**/__spec__/*_spec.ts"
+    "test": "mocha --compilers ts:ts-node/register src/**/__spec__/*_spec.ts src/**/**/__spec__/*_spec.ts"
   },
   "author": "Samuel Attard",
   "license": "Apache-2.0",
