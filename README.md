@@ -17,6 +17,11 @@ A configurable and versatile update server for all your Electron apps
   * Linux - RedHat
   * Linux - Debian
 
+## Stable Version
+
+The currently "stable" version is `v0.8.3`, unless you want a walk on the wild
+side.  Please stick to that release.
+
 ## Electron Version Requirements
 
 Please note that using Nucleus requires that you use Electron `>=2.0.0`.
