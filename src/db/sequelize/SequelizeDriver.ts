@@ -3,6 +3,7 @@ import { Sequelize } from 'sequelize-typescript';
 import BaseDriver from '../BaseDriver';
 import getSequelize, { App, TeamMember, Channel, Version, File, TemporarySave, TemporarySaveFile, WebHook, WebHookError, Migration } from './models';
 import BaseMigration from '../../migrations/BaseMigration';
+import * as config from '../../config';
 
 const hat = require('hat');
 
@@ -278,10 +279,13 @@ export default class SequelizeDriver extends BaseDriver {
       include: [File],
     });
     if (!dbVersion) {
+      const channelHasVersion = !!(Version.findOne<Version>({
+        where: { channelId: rawSave.channelId },
+      }));
       dbVersion = new Version({
         name: save.version,
         dead: false,
-        rollout: 0,
+        rollout: channelHasVersion ? config.defaultRollout : 100,
         channelId: rawChannel.id,
       });
       await dbVersion.save();

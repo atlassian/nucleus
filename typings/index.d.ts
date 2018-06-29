@@ -71,6 +71,7 @@ interface IConfig {
   sessionConfig: SessionConfig;
   organization?: string;
   gpgSigningKey: string;
+  defaultRollout: number;
 }
 
 interface User {

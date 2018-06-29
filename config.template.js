@@ -170,5 +170,12 @@ module.exports = {
    * Requires to be unlocked (no password) and have both the private and
    * public key.
    */
-  gpgSigningKey: 'GPG KEY HERE'
+  gpgSigningKey: 'GPG KEY HERE',
+
+  /**
+   * The default percentage rollout for new releases.  The first release for
+   * any channel will always be 100% but all future releases will have a
+   * default rollout value of this setting
+   */
+  defaultRollout: 0
 };

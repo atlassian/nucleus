@@ -33,3 +33,9 @@ export const localAuth = config!.localAuth;
 export const sessionConfig = config!.sessionConfig;
 export const organization = config!.organization;
 export const gpgSigningKey = config!.gpgSigningKey;
+export const defaultRollout = config!.defaultRollout || 0;
+
+if (defaultRollout < 0 || defaultRollout > 100 ||
+    typeof defaultRollout !== 'number' || Math.round(defaultRollout) !== defaultRollout) {
+  throw new Error(`Expected 'config.defaultRollout' to be an integer between 0 and 100 but it was "${defaultRollout}"`);
+}
