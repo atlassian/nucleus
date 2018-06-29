@@ -210,4 +210,4 @@ const mapStateToProps = (state: AppState) => ({
   migrations: state.migrations,
 });
 
-export default connect<AppListReduxProps, AppListReduxDispatchProps, AppListComponentProps>(mapStateToProps, null)(MigrationList);
+export default connect<MigrationListReduxProps, MigrationListReduxDispatchProps, MigrationListComponentProps>(mapStateToProps, null)(MigrationList);
