@@ -295,7 +295,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       }
     });
     const hasFullRolloutAfter = this.state.modalVersion ? !!this.props.channel.versions.find((version) => {
-      return !version.dead && version.rollout === 100 && semver.gt(version.name, this.state.modalVersion.version.name)
+      return !version.dead && version.rollout === 100 && semver.gt(version.name, this.state.modalVersion.version.name);
     }) : false;
     return (
       <div style={{ width: '100%' }}>

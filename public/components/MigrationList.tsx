@@ -133,9 +133,9 @@ class MigrationList extends React.PureComponent<MigrationListComponentProps & Mi
         <div className={styles.migration}>
           <b>{migration.friendlyName}</b>
           {
-            migration.dependsOn.length > 0
+            (migration as any).dependsOn.length > 0
             ? (
-              <div><i>Depends On: {migration.dependsOn.map(k => this.props.migrations.items.find(m => m.key === k)!.friendlyName).join(', ')}</i></div>
+              <div><i>Depends On: {(migration as any).dependsOn.map(k => this.props.migrations.items.find(m => m.key === k)!.friendlyName).join(', ')}</i></div>
             ) : null
           }
           {
