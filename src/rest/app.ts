@@ -10,18 +10,12 @@ import store from '../files/store';
 import Positioner from '../files/Positioner';
 import WebHook from './WebHook';
 
+import { requireLogin, noPendingMigrations } from './_helpers';
+
 const d = debug('nucleus:rest');
 const router = express();
 const a = createA(d);
 const upload = multer();
-
-const requireLogin: express.RequestHandler = (req, res, next) => {
-  if (!req.user) {
-    d(`Unauthenticated user attempted to access: ${req.url}`);
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-  next();
-};
 
 const checkField = (req: Express.Request, res: Express.Response, field: string) => {
   if (!req.body) {
@@ -75,7 +69,7 @@ const MAGIC_NAMES = [
   'public.key',
 ];
 
-router.post('/', requireLogin, upload.single('icon'), a(async (req, res) => {
+router.post('/', requireLogin, noPendingMigrations, upload.single('icon'), a(async (req, res) => {
   if (checkField(req, res, 'name')) {
     // It's unlikely but let's not shoot ourselves in the foot
     // In the healthcheck we use __healthcheck as a magic file to
@@ -127,7 +121,7 @@ router.get('/:id', requireLogin, a(async (req, res) => {
   res.json(req.targetApp);
 }));
 
-router.post('/:id/icon', requireLogin, upload.single('icon'), a(async (req, res) => {
+router.post('/:id/icon', requireLogin, noPendingMigrations, upload.single('icon'), a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   d(`Setting new application icon: ${req.targetApp.slug}`);
   if (req.file) {
@@ -142,7 +136,7 @@ router.post('/:id/icon', requireLogin, upload.single('icon'), a(async (req, res)
   }
 }));
 
-router.post('/:id/webhook', requireLogin, a(async (req, res) => {
+router.post('/:id/webhook', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['url', 'secret'])) {
     d(`Creating new WebHook: '${req.body.url}' for app: '${req.targetApp.slug}'`);
@@ -156,7 +150,7 @@ router.post('/:id/webhook', requireLogin, a(async (req, res) => {
   }
 }));
 
-router.delete('/:id/webhook/:webHookId', requireLogin, a(async (req, res) => {
+router.delete('/:id/webhook/:webHookId', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   d(`Deleting WebHook: '${req.params.webHookId}' for app: '${req.targetApp.slug}'`);
   const rawHook = await driver.getWebHook(req.targetApp, req.params.webHookId);
@@ -169,7 +163,7 @@ router.delete('/:id/webhook/:webHookId', requireLogin, a(async (req, res) => {
   });
 }));
 
-router.post('/:id/channel', requireLogin, a(async (req, res) => {
+router.post('/:id/channel', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['name'])) {
     d(`Creating new channel: '${req.body.name}' for app: '${req.targetApp.slug}'`);
@@ -181,13 +175,13 @@ router.post('/:id/channel', requireLogin, a(async (req, res) => {
   }
 }));
 
-router.post('/:id/refresh_token', requireLogin, a(async (req, res) => {
+router.post('/:id/refresh_token', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   d(`Regenerating the authentication token for app: ${req.targetApp.slug}`);
   res.json(await driver.resetAppToken(req.targetApp));
 }));
 
-router.post('/:id/team', requireLogin, a(async (req, res) => {
+router.post('/:id/team', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['team'])) {
     const team: string[] = JSON.parse(req.body.team);
@@ -241,7 +235,7 @@ router.get('/:id/channel/:channelId/temporary_releases/:temporarySaveId/:fileNam
   res.send();
 }));
 
-router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -305,7 +299,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
   }
 }));
 
-router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -332,7 +326,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete'
   res.json({ success: true });
 }));
 
-router.post('/:id/channel/:channelId/dead', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/dead', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -352,7 +346,7 @@ router.post('/:id/channel/:channelId/dead', requireLogin, a(async (req, res) => 
   }
 }));
 
-router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -396,7 +390,7 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) 
   }
 }));
 
-router.post('/:id/channel/:channelId/upload', upload.any(), a(async (req, res) => {
+router.post('/:id/channel/:channelId/upload', noPendingMigrations, upload.any(), a(async (req, res) => {
   const token = req.headers.authorization;
   if (token !== req.targetApp.token) {
     return res.status(404).json({
