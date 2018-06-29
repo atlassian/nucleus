@@ -1,3 +1,13 @@
+#### 1.0.1 (2018-06-29)
+
+##### Documentation Changes
+
+* declare v0.8.3 as the "stable" release (670dc3d3)
+
+##### Bug Fixes
+
+* **public:** remove 2 second delay on migration (7dcdb02d)
+
 ## 1.0.0 (2018-06-29)
 
 ##### New Features
