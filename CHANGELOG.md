@@ -1,3 +1,9 @@
+#### 1.0.2 (2018-06-29)
+
+##### Bug Fixes
+
+* **public:** fix linting in public, badly used interface names (073c35a8)
+
 #### 1.0.1 (2018-06-29)
 
 ##### Documentation Changes
