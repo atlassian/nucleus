@@ -182,6 +182,10 @@ declare namespace Express {
     body: any;
     targetApp: NucleusApp;
     channel: NucleusChannel;
+    migration: {
+      internal: NucleusMigration;
+      migrator: any;
+    };
   }
 }
 

@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { connect, Dispatch } from 'react-redux';
-import { Redirect, Link } from 'react-router';
 import { UploadField } from '@navjobs/upload';
 
-import AkAvatar from '@atlaskit/avatar';
 import AkButton from '@atlaskit/button';
 import AkFieldBase, { Label as AkLabel } from '@atlaskit/field-base';
 import AkFieldText from '@atlaskit/field-text';

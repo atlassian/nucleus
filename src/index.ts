@@ -14,6 +14,7 @@ import driver from './db/driver';
 import store from './files/store';
 import adminRouter from './rest/admin';
 import appRouter from './rest/app';
+import migrationRouter from './rest/migration';
 import { authenticateRouter, setupApp } from './rest/auth';
 import { isGpgKeyValid } from './files/utils/gpg';
 import { registerMigrations } from './migrations';
@@ -70,6 +71,7 @@ restRouter.get('/deepcheck', async (req, res) => {
 restRouter.get('/healthcheck', (req, res) => res.json({ alive: true }));
 restRouter.use('/app', appRouter);
 restRouter.use('/auth', authenticateRouter);
+restRouter.use('/migration', migrationRouter);
 restRouter.use('/admin', (req, res, next) => {
   if (req.user && req.user.isAdmin) return next();
   return res.status(403).json({ error: 'Not an admin' });

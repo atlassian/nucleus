@@ -8,6 +8,7 @@ import { setUser } from './actions/user';
 import PageWrapper from './components/PageWrapper';
 import AppList from './components/AppList';
 import AppPage from './components/AppPage';
+import MigrationList from './components/MigrationList';
 
 import AkSpinner from '@atlaskit/spinner';
 
@@ -49,7 +50,7 @@ class App extends React.PureComponent<{
         <Route path="/" component={PageWrapper}>
           <Route path="/apps" component={AppList} />
           <Route path="/apps/:appSlug" component={AppPage} />
-          {/* <Route path="/migrations" component={MigrationList} /> */}
+          <Route path="/migrations" component={MigrationList} />
           {/* <Route path="*" component={NotFoundPage} /> */}
         </Route>
       </Router>

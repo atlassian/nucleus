@@ -13,6 +13,16 @@ export const requireLogin: express.RequestHandler = (req, res, next) => {
   next();
 };
 
+export const requireAdmin: express.RequestHandler = (req, res, next) => {
+  return requireLogin(req, res, () => {
+    if (!req.user.isAdmin) {
+      d(`Non admin user attempted to access: ${req.url}`);
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  });
+};
+
 export const noPendingMigrations: express.RequestHandler = async (req, res, next) => {
   try {
     const migrations = await driver.getMigrations();
