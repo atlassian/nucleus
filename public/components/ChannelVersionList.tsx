@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as semver from 'semver';
 
 import AkBanner from '@atlaskit/banner';
 import AkButton from '@atlaskit/button';
@@ -293,7 +294,9 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
         foundIndex = index;
       }
     });
-    const notLastVersion = foundIndex < this.props.channel.versions.length - 1;
+    const hasFullRolloutAfter = this.state.modalVersion ? !!this.props.channel.versions.find((version) => {
+      return !version.dead && version.rollout === 100 && semver.gt(version.name, this.state.modalVersion.version.name)
+    }) : false;
     return (
       <div style={{ width: '100%' }}>
         <AkTabs
@@ -305,8 +308,8 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
             <AkModalDialog
               header={<h4 style={{ marginBottom: 0 }}>Version: {this.state.modalVersion.version.name}</h4>}
               footer={<div style={{ textAlign: 'right' }}>
-                { !this.state.modalVersion.isPreRelease && notLastVersion ? this.killButton : null }
-                { !this.state.modalVersion.isPreRelease && notLastVersion ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
+                { !this.state.modalVersion.isPreRelease && hasFullRolloutAfter ? this.killButton : null }
+                { !this.state.modalVersion.isPreRelease && hasFullRolloutAfter ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
                 <AkButton appearance="primary" onClick={this.closeModal} isDisabled={this.state.releasing}>Done</AkButton>
                 { this.state.modalVersion.isPreRelease ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
                 { this.state.modalVersion.isPreRelease ? <AkButton appearance="primary" onClick={this.release} isDisabled={this.state.releasing || this.props.hasPendingMigration}>Release</AkButton> : null }

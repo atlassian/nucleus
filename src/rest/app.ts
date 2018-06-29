@@ -17,6 +17,13 @@ const router = express();
 const a = createA(d);
 const upload = multer();
 
+const updateStaticReleaseMetaData = async (app: NucleusApp, channel: NucleusChannel) => {
+  const upToDateChannel = (await driver.getChannel(app, channel.id!))!;
+
+  const positioner = new Positioner(store);
+  await positioner.updateDarwinReleasesFiles(app, upToDateChannel, 'x64');
+};
+
 const checkField = (req: Express.Request, res: Express.Response, field: string) => {
   if (!req.body) {
     res.status(400).json({
@@ -350,7 +357,11 @@ router.post('/:id/channel/:channelId/dead', requireLogin, noPendingMigrations, a
     }
     d(`User: ${req.user.id} marking a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
 
-    res.json(await driver.setVersionDead(req.targetApp, channel, req.body.version, req.body.dead));
+    const updatedChannel = await driver.setVersionDead(req.targetApp, channel, req.body.version, req.body.dead);
+
+    await updateStaticReleaseMetaData(req.targetApp, channel);
+
+    res.json(updatedChannel);
   }
 }));
 
@@ -394,6 +405,7 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations
         );
       });
     }
+    await updateStaticReleaseMetaData(req.targetApp, updatedChannel);
     res.json(updatedChannel);
   }
 }));
@@ -432,7 +444,7 @@ router.post('/:id/channel/:channelId/upload', noPendingMigrations, upload.any(),
         });
       }
       for (const fileName of fileNames) {
-        if (!fileName.indexOf(req.body.version)) {
+        if (fileName.indexOf(req.body.version) === -1) {
           return res.status(400).json({
             error: `The file name "${fileName}" did not contain the provided version, files uploaded to nucleus must contain the version to ensure cache busting`,
           });

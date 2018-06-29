@@ -173,6 +173,10 @@ export default class SequelizeDriver extends BaseDriver {
   public async getChannel(app: NucleusApp, channelId: ChannelID) {
     await this.ensureConnected();
     const channel = await Channel.findOne({
+      include: [{
+        model: Version,
+        include: [File],
+      }],
       where: {
         appId: parseInt(app.id!, 10),
         stringId: channelId,
@@ -289,6 +293,7 @@ export default class SequelizeDriver extends BaseDriver {
         channelId: rawChannel.id,
       });
       await dbVersion.save();
+      dbVersion.files = [];
     }
 
     const storedFileNames: string[] = [];
