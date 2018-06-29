@@ -114,7 +114,7 @@ export default class Positioner {
       await this.store.putFile(this.getIndexKey(app, channel, internalVersion, file), fileData);
     }
 
-    if (internalVersion.rollout === 100 && this.isLatestRelease(internalVersion, channel)) {
+    if (internalVersion.rollout === 100 && !internalVersion.dead && this.isLatestRelease(internalVersion, channel)) {
       await this.copyFileToLatest(app, channel, internalVersion, file);
     }
   }
@@ -136,6 +136,7 @@ export default class Positioner {
   public async potentiallyUpdateLatestInstallers(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, internalVersion: NucleusVersion) {
     if (lock !== await this.currentLock(app)) return;
     if (internalVersion.rollout !== 100) return;
+    if (internalVersion.dead) return;
     if (!this.isLatestRelease(internalVersion, channel)) return;
 
     for (const file of internalVersion.files) {
@@ -167,7 +168,9 @@ export default class Positioner {
   }
 
   private isLatestRelease(version: NucleusVersion, channel: NucleusChannel) {
-    const greaterVersion = channel.versions.find(v => semver.gt(v.name, version.name));
+    const greaterVersion = channel.versions
+      .filter(v => v.rollout === 100 && !v.dead)
+      .find(v => semver.gt(v.name, version.name));
     return !greaterVersion;
   }
 

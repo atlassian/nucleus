@@ -336,12 +336,20 @@ router.post('/:id/channel/:channelId/dead', requireLogin, noPendingMigrations, a
   }
 
   if (checkFields(req, res, ['version', 'dead'])) {
-    const isGreatest = channel.versions.some(version => semver.gt(version.name, req.body.version));
+    const internalVersion = channel.versions.find(v => v.name === req.body.version);
+    if (!internalVersion) {
+      return res.status(404).json({ error: 'Version not found' });
+    }
+    const isGreatest = !channel.versions
+      .filter(version => version.rollout === 100 && !version.dead)
+      .some(version => semver.gt(version.name, internalVersion.name));
+
     if (isGreatest) {
       d(`User: ${req.user.id} tried to make a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}.  But was rejected for safety reasons`);
       return res.status(400).json({ error: 'You can\'t kill the latest version' });
     }
     d(`User: ${req.user.id} marking a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
+
     res.json(await driver.setVersionDead(req.targetApp, channel, req.body.version, req.body.dead));
   }
 }));
