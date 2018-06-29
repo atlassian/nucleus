@@ -123,6 +123,11 @@ export default class Positioner {
     return path.posix.join(app.slug, channel.id, '_index', version.name, file.platform, file.arch, file.fileName);
   }
 
+  public getLatestKey(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
+    const ext = path.extname(file.fileName);
+    return path.posix.join(app.slug, channel.id, 'latest', file.platform, file.arch, `${app.name}${ext}`);
+  }
+
   /**
    * Given a version for an app / channel check if any of the files should be uploaded to the "latest"
    * positioning.  This will only occur if the rollout is 100 and the version is the "latest" according
@@ -143,12 +148,21 @@ export default class Positioner {
    */
   private async copyFileToLatest(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
     if (file.type === 'installer') {
-      const ext = path.extname(file.fileName);
-      await this.store.putFile(
-        path.posix.join(app.slug, channel.id, file.platform, file.arch, `${app.name}${ext}`),
-        await this.store.getFile(this.getIndexKey(app, channel, version, file)),
-        true,
-      );
+      const latestKey = this.getLatestKey(app, channel, version, file);
+      const latestRef = (await this.store.getFile(`${latestKey}.ref`)).toString();
+
+      if (latestRef !== version.name) {
+        await this.store.putFile(
+          latestKey,
+          await this.store.getFile(this.getIndexKey(app, channel, version, file)),
+          true,
+        );
+        await this.store.putFile(
+          `${latestKey}.ref`,
+          Buffer.from(version.name),
+          true,
+        );
+      }
     }
   }
 

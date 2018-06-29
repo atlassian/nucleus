@@ -241,10 +241,10 @@ autoUpdater.setFeedURL({
             <h5>Latest Release Download</h5>
             <div className={styles.codeCard} style={{ fontSize: 14, fontFamily: '"SFMono-Medium", "SF Mono", "Segoe UI Mono", "Roboto Mono", "Ubuntu Mono", Menlo, Courier, monospace' }}>
               <p>The latest release in this channel which is set to 100% rollout will be available at:</p>
-              <p>{`${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/{platform}/{arch}/${app.name}.{extension}`}</p>
+              <p>{`${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/latest/{platform}/{arch}/${app.name}.{extension}`}</p>
               <br />
               <p>For example, your .EXE installer</p>
-              <p>{`${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/win32/x64/${app.name}.exe`}</p>
+              <p>{`${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/latest/win32/x64/${app.name}.exe`}</p>
             </div>
             <h5>Yum Repo Usage</h5>
             <div className={styles.codeCard}>
