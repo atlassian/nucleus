@@ -36,7 +36,7 @@ class MigrationList extends React.PureComponent<MigrationListComponentProps & Mi
 
   private runMigration = async () => {
     const done = () => {
-      setTimeout(() => this.runMigration(), 2000);
+      setTimeout(() => this.runMigration(), 0);
     };
 
     if (!this.state.activeMigration)  {
