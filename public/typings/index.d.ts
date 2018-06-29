@@ -11,11 +11,16 @@ interface UserSubState {
 
 interface AppSubState extends Application {}
 type AppsSubState = NucleusApp[];
+interface MigrationSubState {
+  items: NucleusMigration[];
+  hasPendingMigration: boolean;
+}
 
 interface AppState {
   user: UserSubState;
   apps: AppsSubState;
   base: string;
+  migrations: MigrationSubState;
 }
 
 declare module '*.scss' {

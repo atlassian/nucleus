@@ -3,6 +3,7 @@ import { Router, Route, Redirect, browserHistory } from 'react-router';
 import { connect } from 'react-redux';
 
 import { setBaseUpdateUrl } from './actions/base';
+import { setMigrations } from './actions/migrations';
 import { setUser } from './actions/user';
 import PageWrapper from './components/PageWrapper';
 import AppList from './components/AppList';
@@ -19,11 +20,13 @@ class App extends React.PureComponent<{
   },
   setUser: typeof setUser,
   setBaseUpdateUrl: typeof setBaseUpdateUrl,
+  setMigrations: typeof setMigrations,
 }, {}> {
   async componentDidMount() {
     const response = await fetch('/rest/config', { credentials: 'include' });
-    const config: { user: User, app: Application, baseUpdateUrl: string } = await response.json();
+    const config: { user: User, app: Application, baseUpdateUrl: string, migrations: NucleusMigration[] } = await response.json();
     this.props.setBaseUpdateUrl(config.baseUpdateUrl);
+    this.props.setMigrations(config.migrations);
     this.props.setUser(config.user);
     if (!config.user) {
       window.location.href = '/rest/auth/login';
@@ -46,7 +49,8 @@ class App extends React.PureComponent<{
         <Route path="/" component={PageWrapper}>
           <Route path="/apps" component={AppList} />
           <Route path="/apps/:appSlug" component={AppPage} />
-          {/*<Route path="*" component={NotFoundPage} />*/}
+          {/* <Route path="/migrations" component={MigrationList} /> */}
+          {/* <Route path="*" component={NotFoundPage} /> */}
         </Route>
       </Router>
     );
@@ -60,6 +64,7 @@ const mapStateToProps = (state: AppState) => ({
 const mapDispatchToProps = dispatch => ({
   setUser: user => dispatch(setUser(user)),
   setBaseUpdateUrl: url => dispatch(setBaseUpdateUrl(url)),
+  setMigrations: migrations => dispatch(setMigrations(migrations)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

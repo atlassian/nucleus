@@ -136,6 +136,12 @@ interface NucleusVersion {
   files: NucleusFile[];
 }
 
+interface NucleusMigration {
+  key: string;
+  friendlyName: string;
+  complete: boolean;
+}
+
 interface ITemporarySave {
   id: any;
   saveString: string;

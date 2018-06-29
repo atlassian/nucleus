@@ -192,6 +192,18 @@ export class File extends Model<File> {
   version: Version;
 }
 
+@Table
+export class Migration extends Model<Migration> implements NucleusMigration {
+  @Column(DataType.STRING)
+  key: string;
+
+  @Column(DataType.STRING)
+  friendlyName: string;
+
+  @Column(DataType.BOOLEAN)
+  complete: boolean;
+}
+
 const d = debug('nucleus:db:migrator');
 
 const upwardsMigrations: ((queryInterface: QueryInterface) => Promise<void>)[] = [
@@ -237,6 +249,7 @@ export default async function () {
     TemporarySaveFile,
     WebHook,
     WebHookError,
+    Migration,
   ]);
 
   await sequelize.authenticate();

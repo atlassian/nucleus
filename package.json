@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@atlaskit/avatar": "^4.0.5",
-    "@atlaskit/banner": "^4.0.1",
+    "@atlaskit/banner": "^6.1.2",
     "@atlaskit/button": "^5.4.0",
     "@atlaskit/css-reset": "^1.1.4",
     "@atlaskit/droplist": "^4.0.1",

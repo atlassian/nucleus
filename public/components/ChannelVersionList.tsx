@@ -15,6 +15,7 @@ export interface ChannelVersionListProps {
   channel: NucleusChannel;
   baseUpdateUrl: string;
   updateApps: (showLoading: boolean) => Promise<void>;
+  hasPendingMigration: boolean;
 }
 
 interface PossiblePreReleaseVersion {
@@ -271,7 +272,15 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       appearance = 'help';
       text = 'Revive';
     }
-    return <AkButton appearance={appearance as any} onClick={this.toggleVersionDeath} isDisabled={this.state.killing}>{text}</AkButton>;
+    return (
+      <AkButton
+        appearance={appearance as any}
+        onClick={this.toggleVersionDeath}
+        isDisabled={this.state.killing || this.props.hasPendingMigration}
+      >
+        {text}
+      </AkButton>
+    );
   }
 
   render() {
@@ -300,9 +309,9 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
                 { !this.state.modalVersion.isPreRelease && notLastVersion ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
                 <AkButton appearance="primary" onClick={this.closeModal} isDisabled={this.state.releasing}>Done</AkButton>
                 { this.state.modalVersion.isPreRelease ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
-                { this.state.modalVersion.isPreRelease ? <AkButton appearance="primary" onClick={this.release} isDisabled={this.state.releasing}>Release</AkButton> : null }
+                { this.state.modalVersion.isPreRelease ? <AkButton appearance="primary" onClick={this.release} isDisabled={this.state.releasing || this.props.hasPendingMigration}>Release</AkButton> : null }
                 { this.state.modalVersion.isPreRelease ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
-                { this.state.modalVersion.isPreRelease ? <AkButton appearance="danger" onClick={this.delete} isDisabled={this.state.releasing}>Delete</AkButton> : null }
+                { this.state.modalVersion.isPreRelease ? <AkButton appearance="danger" onClick={this.delete} isDisabled={this.state.releasing || this.props.hasPendingMigration}>Delete</AkButton> : null }
               </div>}
               isOpen={this.state.modalOpen}
               onDialogDismissed={this.closeModal}
@@ -337,7 +346,13 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
                 : (
                   <div style={{ marginTop: 4 }}>
                     <b>Current Rollout: </b>{this.state.modalVersion.version.rollout}%
-                    <a href="javascript: void" style={{ marginLeft: 8 }} onClick={this.modifyRollout}>Edit</a>
+                    <a
+                      href="javascript: void"
+                      style={{ marginLeft: 8, cursor: this.props.hasPendingMigration ? 'not-allowed' : 'pointer' }}
+                      onClick={this.props.hasPendingMigration ? () => {} : this.modifyRollout}
+                    >
+                      Edit
+                    </a>
                   </div>
                 )
               }
@@ -366,7 +381,3 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     );
   }
 }
-
-const mapStateToProps = state => ({
-  baseUpdateUrl: state.base,
-});

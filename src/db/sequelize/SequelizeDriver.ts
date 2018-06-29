@@ -1,7 +1,8 @@
 import { Sequelize } from 'sequelize-typescript';
 
 import BaseDriver from '../BaseDriver';
-import getSequelize, { App, TeamMember, Channel, Version, File, TemporarySave, TemporarySaveFile, WebHook, WebHookError } from './models';
+import getSequelize, { App, TeamMember, Channel, Version, File, TemporarySave, TemporarySaveFile, WebHook, WebHookError, Migration } from './models';
+import BaseMigration from '../../migrations/BaseMigration';
 
 const hat = require('hat');
 
@@ -402,5 +403,23 @@ export default class SequelizeDriver extends BaseDriver {
     }
     await this.writeVersionsFileToStore(app, channel);
     return this.fixChannelStruct(rawChannel.get());
+  }
+
+  public async addMigrationIfNotExists(migration: BaseMigration<any>) {
+    const existing = await Migration.findOne<Migration>({
+      where: {
+        key: migration.key,
+      },
+    });
+    if (existing) return existing;
+    return await Migration.create<Migration>({
+      key: migration.key,
+      friendlyName: migration.friendlyName,
+      complete: false,
+    });
+  }
+
+  public async getMigrations() {
+    return await Migration.findAll<Migration>();
   }
 }

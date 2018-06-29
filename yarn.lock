@@ -11,15 +11,12 @@
     prop-types "^15.5.10"
     styled-components "^1.3.0"
 
-"@atlaskit/banner@^4.0.1":
-  version "4.0.3"
-  resolved "https://registry.yarnpkg.com/@atlaskit/banner/-/banner-4.0.3.tgz#2a2bf43527054838cbbf51a2fea094f91e303a47"
+"@atlaskit/banner@^6.1.2":
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/@atlaskit/banner/-/banner-6.1.2.tgz#dd69924b98b7a6b5388498ed7e572f1fadde9d49"
   dependencies:
-    "@atlaskit/theme" "^2.0.0"
-    "@atlaskit/util-shared-styles" "^2.0.1"
-    babel-runtime "^6.11.6"
-    prop-types "^15.5.10"
-    styled-components "^1.4.6"
+    "@atlaskit/theme" "^4.0.3"
+    babel-runtime "^6.26.0"
 
 "@atlaskit/blanket@^2.0.4", "@atlaskit/blanket@^2.4.2":
   version "2.4.3"
@@ -285,6 +282,12 @@
   dependencies:
     prop-types "^15.5.10"
     styled-components "^1.4.6"
+
+"@atlaskit/theme@^4.0.3":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@atlaskit/theme/-/theme-4.1.0.tgz#b3fec7722861af4b6dd9ee524bd57bf878e3bf09"
+  dependencies:
+    prop-types "^15.5.10"
 
 "@atlaskit/tooltip@^6.0.0", "@atlaskit/tooltip@^6.2.0":
   version "6.2.2"

@@ -119,7 +119,7 @@ export default class Positioner {
     }
   }
 
-  private getIndexKey(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
+  public getIndexKey(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
     return path.posix.join(app.slug, channel.id, '_index', version.name, file.platform, file.arch, file.fileName);
   }
 

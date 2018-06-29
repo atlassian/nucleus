@@ -15,6 +15,7 @@ export interface WebHookManagementProps {
   app: NucleusApp;
   setApps: (apps: NucleusApp[]) => void;
   apps: NucleusApp[];
+  hasPendingMigration: boolean;
 }
 
 export interface WebHookManagementState {
@@ -162,7 +163,7 @@ export default class WebHookManagement extends React.PureComponent<WebHookManage
                 }
                 <span className={styles.url}>{hook.url}</span>
                 <AkButton appearance="warning" onClick={this.showWebHookLogs(hook)}>Logs</AkButton>
-                <AkButton appearance="danger" onClick={this.removeWebHook(hook)}>
+                <AkButton appearance="danger" onClick={this.removeWebHook(hook)} isDisabled={this.props.hasPendingMigration}>
                   {
                     this.state.deletingWebHooks.has(hook.id)
                     ? (
@@ -182,7 +183,7 @@ export default class WebHookManagement extends React.PureComponent<WebHookManage
             <FieldTextStateless onChange={this.saveWebHookSecret} label="Web Hook Secret" placeholder="MagicalCat24" value={this.state.newWebHookSecret} />
           </div>
           <div className={styles.createWebHookButton}>
-            <AkButton appearance="primary" onClick={this.createWebHook}>
+            <AkButton appearance="primary" onClick={this.createWebHook} isDisabled={this.props.hasPendingMigration}>
             {
               this.state.creatingWebHook
               ? (

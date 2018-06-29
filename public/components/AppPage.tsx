@@ -26,6 +26,7 @@ interface AppPageReduxProps {
   apps: AppsSubState;
   baseUpdateUrl: string;
   user: User;
+  hasPendingMigration: boolean;
 }
 interface AppPageReduxDispatchProps {
   setApps: (apps: NucleusApp[]) => any;
@@ -198,7 +199,13 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
           <div className={styles.tab}>
             <h5>Versions</h5>
             <div className={styles.codeCard}>
-              <ChannelVersionList app={app} channel={channel} baseUpdateUrl={this.props.baseUpdateUrl} updateApps={this.fetchApps} />
+              <ChannelVersionList
+                app={app}
+                channel={channel}
+                baseUpdateUrl={this.props.baseUpdateUrl}
+                updateApps={this.fetchApps}
+                hasPendingMigration={this.props.hasPendingMigration}
+              />
             </div>
             <h5>Updater Usage</h5>
             <div className={styles.codeCard}>
@@ -269,7 +276,7 @@ sudo apt-get install <package-name>`}
         <div style={{ flex: 1 }}>
           <AkFieldText label="Name" placeholder="E.g. Stable" shouldFitContainer required onChange={this.saveChannelName} />
           <div style={{ height: 8 }} />
-          <AkButton appearance="primary" onClick={this.createChannel}>Create</AkButton>
+          <AkButton appearance="primary" onClick={this.createChannel} isDisabled={this.props.hasPendingMigration}>Create</AkButton>
         </div>
       ),
       defaultSelected: channels.length === 0,
@@ -344,7 +351,7 @@ sudo apt-get install <package-name>`}
                     <input className={styles.token} type="text" defaultValue={app.token} disabled />
                   </AkFieldBase>
                   <div style={{ height: 8 }} />
-                  <AkButton appearance="danger" onClick={this.resetToken}>Reset Token</AkButton>
+                  <AkButton appearance="danger" onClick={this.resetToken} isDisabled={this.props.hasPendingMigration}>Reset Token</AkButton>
                 </div>
                 <div className={styles.iconContainer}>
                   <UploadField
@@ -393,10 +400,15 @@ sudo apt-get install <package-name>`}
                   onOpenChange={this.handleOpenChange}
                   onNewItemCreated={this.handleTeamAdd}
                   onRemoved={this.handleTeamRemove}
-                  isDisabled={this.state.teamUpdating}
+                  isDisabled={this.state.teamUpdating || this.props.hasPendingMigration}
                 />
               </div>
-              <WebHookManagement app={app} apps={this.props.apps} setApps={this.props.setApps} />
+              <WebHookManagement
+                app={app}
+                apps={this.props.apps}
+                setApps={this.props.setApps}
+                hasPendingMigration={this.props.hasPendingMigration}
+              />
             </div>
             : (
               <div className={styles.notFound}>
@@ -416,6 +428,7 @@ const mapStateToProps = (state: AppState) => ({
   apps: state.apps,
   baseUpdateUrl: state.base,
   user: state.user.user,
+  hasPendingMigration: state.migrations.hasPendingMigration,
 });
 
 const mapDispatchToProps = (dispatch: Dispatch<void>) => ({

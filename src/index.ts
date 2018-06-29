@@ -16,6 +16,7 @@ import adminRouter from './rest/admin';
 import appRouter from './rest/app';
 import { authenticateRouter, setupApp } from './rest/auth';
 import { isGpgKeyValid } from './files/utils/gpg';
+import { registerMigrations } from './migrations';
 
 const d = debug('nucleus');
 const a = createA(d);
@@ -79,6 +80,7 @@ restRouter.get('/config', a(async (req, res) => {
   res.json({
     user: req.user,
     baseUpdateUrl: await store.getPublicBaseUrl(),
+    migrations: await driver.getMigrations(),
   });
 }));
 
@@ -133,6 +135,9 @@ d('Setting up server');
     true,
   );
   d('GPG key now public at:', `${await store.getPublicBaseUrl()}/public.key`);
+  d('registering migrations');
+  await registerMigrations();
+  d('migrations all registered');
   app.listen(port, () => {
     d('Nucleus Server started on port:', port);
   });

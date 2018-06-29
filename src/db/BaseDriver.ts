@@ -3,6 +3,7 @@ import * as semver from 'semver';
 import * as toIco from 'to-ico';
 
 import store from '../files/store';
+import BaseMigration from '../migrations/BaseMigration';
 
 const IDENTIFYING_SUFFIXES = ['-full.nupkg', '-delta.nupkg', '.exe', '.msi', '.zip', '.dmg', '.deb', '.rpm'];
 
@@ -28,6 +29,9 @@ export abstract class IDBDriver {
   public abstract setWebHookRegistered(app: NucleusApp, webHookId: number, registered: boolean): Promise<NucleusWebHook | null>;
   public abstract setVersionDead(app: NucleusApp, channel: NucleusChannel, version: string, dead: boolean): Promise<NucleusChannel>;
   public abstract setVersionRollout(app: NucleusApp, channel: NucleusChannel, version: string, rollout: number): Promise<NucleusChannel>;
+  // Migrations
+  public abstract addMigrationIfNotExists(migration: BaseMigration<any>): Promise<NucleusMigration>;
+  public abstract getMigrations(): Promise<NucleusMigration[]>;
 }
 
 export default abstract class BaseDriver extends IDBDriver {
