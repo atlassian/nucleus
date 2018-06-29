@@ -161,6 +161,7 @@ describe('Positioner', () => {
         it('should do nothing if the version is not latest', async () => {
           fakeChannel.versions.push({
             name: '0.0.3',
+            rollout: 100,
           } as any);
           await positioner.potentiallyUpdateLatestInstallers(
             lock,
@@ -198,10 +199,14 @@ describe('Positioner', () => {
           );
           expect(
             fakeStore.getFile.getCalls().filter(call => !call.args[0].endsWith('.lock')).length,
-          ).to.equal(2);
-          expect(fakeStore.putFile.callCount).to.equal(2);
-          expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/win32/x64/Fake Slug.exe');
-          expect(fakeStore.putFile.secondCall.args[0]).to.equal('fake_slug/fake_channel_id/darwin/x64/Fake Slug.dmg');
+          ).to.equal(4);
+          expect(fakeStore.putFile.callCount).to.equal(4);
+          expect(fakeStore.putFile.getCall(0).args[0]).to.equal('fake_slug/fake_channel_id/latest/win32/x64/Fake Slug.exe');
+          expect(fakeStore.putFile.getCall(1).args[0]).to.equal('fake_slug/fake_channel_id/latest/win32/x64/Fake Slug.exe.ref');
+          expect(fakeStore.putFile.getCall(1).args[1].toString()).to.equal('0.0.2');
+          expect(fakeStore.putFile.getCall(2).args[0]).to.equal('fake_slug/fake_channel_id/latest/darwin/x64/Fake Slug.dmg');
+          expect(fakeStore.putFile.getCall(3).args[0]).to.equal('fake_slug/fake_channel_id/latest/darwin/x64/Fake Slug.dmg.ref');
+          expect(fakeStore.putFile.getCall(3).args[1].toString()).to.equal('0.0.2');
         });
       });
 
@@ -218,8 +223,10 @@ describe('Positioner', () => {
           },
           fileData: Buffer.from(''),
         });
-        expect(fakeStore.putFile.callCount).to.equal(1);
-        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/win32/ia32/Fake Slug.exe');
+        expect(fakeStore.putFile.callCount).to.equal(2);
+        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/win32/ia32/Fake Slug.exe');
+        expect(fakeStore.putFile.secondCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/win32/ia32/Fake Slug.exe.ref');
+        expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal('0.0.2');
       });
 
       it('should upload the "Latest" file for a darwin installer type release', async () => {
@@ -235,8 +242,9 @@ describe('Positioner', () => {
           },
           fileData: Buffer.from(''),
         });
-        expect(fakeStore.putFile.callCount).to.equal(1);
-        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/darwin/x64/Fake Slug.dmg');
+        expect(fakeStore.putFile.callCount).to.equal(2);
+        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/darwin/x64/Fake Slug.dmg');
+        expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal('0.0.2');
       });
 
       it('should upload the "Latest" file for a linux installer type release', async () => {
@@ -252,18 +260,38 @@ describe('Positioner', () => {
           },
           fileData: Buffer.from(''),
         });
-        expect(fakeStore.putFile.callCount).to.equal(1);
-        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/linux/ia32/Fake Slug.deb');
+        expect(fakeStore.putFile.callCount).to.equal(2);
+        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/linux/ia32/Fake Slug.deb');
+        expect(fakeStore.putFile.secondCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/linux/ia32/Fake Slug.deb.ref');
+        expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal('0.0.2');
       });
 
       it('should not upload the "Latest" file for any installer type release if it is not the latest release', async () => {
         fakeChannel.versions.push({
           name: '0.0.3',
+          rollout: 100,
         } as any);
         await positioner.handleUpload(lock, {
           app: fakeApp,
           channel: fakeChannel,
           internalVersion: { name: '0.0.2', rollout: 100 } as any,
+          file: {
+            arch: 'ia32',
+            platform: 'linux',
+            fileName: 'thing.deb',
+            type: 'installer',
+          },
+          fileData: Buffer.from(''),
+        });
+        expect(fakeStore.putFile.callCount).to.equal(0);
+      });
+
+      it('should not upload the "Latest" file for any installer type release if it is dead', async () => {
+        fakeChannel.versions = [];
+        await positioner.handleUpload(lock, {
+          app: fakeApp,
+          channel: fakeChannel,
+          internalVersion: { name: '0.0.2', rollout: 100, dead: true } as any,
           file: {
             arch: 'ia32',
             platform: 'linux',
@@ -525,7 +553,8 @@ describe('Positioner', () => {
           },
           fileData: fakeBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // ZIP + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(fakeStore.putFile.firstCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/thing.zip',
         );
@@ -542,6 +571,7 @@ describe('Positioner', () => {
         };
         fakeChannel.versions.push({
           name: '0.0.2',
+          rollout: 0,
           files: [file],
         } as any);
         await positioner.handleUpload(lock, {
@@ -551,7 +581,8 @@ describe('Positioner', () => {
           internalVersion: { name: '0.0.2' } as any,
           fileData: fakeBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // ZIP + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/RELEASES.json',
         );
@@ -568,6 +599,7 @@ describe('Positioner', () => {
         };
         fakeChannel.versions.push({
           name: '0.0.3',
+          rollout: 0,
           files: [file1],
         } as any);
         await positioner.handleUpload(lock, {
@@ -577,7 +609,8 @@ describe('Positioner', () => {
           file: file1,
           fileData: fakeBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // ZIP + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/RELEASES.json',
         );
@@ -600,7 +633,8 @@ describe('Positioner', () => {
           internalVersion: { name: '0.0.2' } as any,
           fileData: fakeBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // ZIP + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(JSON.parse(fakeStore.putFile.secondCall.args[1].toString())).to.deep.equal(v2);
       });
 
@@ -615,6 +649,7 @@ describe('Positioner', () => {
         // Replace 0.0.3
         fakeChannel.versions[1] = {
           name: '0.0.1',
+          rollout: 0,
           files: [file],
         } as any;
         await positioner.handleUpload(lock, {
@@ -624,7 +659,8 @@ describe('Positioner', () => {
           internalVersion: { name: '0.0.1' } as any,
           fileData: fakeBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // ZIP + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/darwin/x64/RELEASES.json',
         );
