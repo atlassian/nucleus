@@ -18,3 +18,16 @@ The following API's, concepts and contracts are considered "Public API":
 * The style of the generated path to Redhat repo
   * `/:appSlug/:channelId/linux/redhat`
   * `/:appSlug/:channelId/linux/:appSlug.repo`
+* The style of the generated path to the "Latest" releases
+  * `/:appSlug/:channelId/latest/:platform/:arch/:appName.:extension`
+
+The version of Nucleus will follow [Semantic Versioning]()
+according to the impact on the above Pulic API.  I.e. Breaking changes will
+result in a Major bump.
+
+Breaking changes will normally come with a migration tool built in to Nucleus
+but it is not guarunteed.  You may have to do migrations for major versions
+manually.
+
+To further clarify this document outlines our goals, it is not an implicit
+contract or promise.  This is simply what we **aim** to achieve.
