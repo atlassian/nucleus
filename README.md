@@ -11,6 +11,10 @@ A configurable and versatile update server for all your Electron apps
 * Companion publisher for [electron-forge](https://github.com/electron-userland/electron-forge) to greatly simplify release publishing
 * Backed by a static file store so minimal server costs
 * One command to run so insanely simple to set up
+* [Staged Rollouts](docs/Staged Rollouts.md)
+  * macOS
+  * Windows _Coming Soon_
+* [Latest Downloads](docs/Latest Releases.md) - Static URL's for downloading the latest version of your application
 * Platform Support:
   * macOS
   * Windows
@@ -70,6 +74,9 @@ Please see the following documents for more information on Nucleus and how it wo
 * [Internal Endpoints](docs/Endpoints.md)
 * [Uploading Releases](docs/Uploading.md)
 * [Architecture](docs/Architecture.md)
+* [Versioned Public API](docs/API.md)
+* [Staged Rollouts](docs/Staged Rollouts.md)
+* [Latest Releases](docs/Latest Releases.md)
 
 ## FAQ
 
