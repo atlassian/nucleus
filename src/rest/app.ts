@@ -21,7 +21,9 @@ const updateStaticReleaseMetaData = async (app: NucleusApp, channel: NucleusChan
   const upToDateChannel = (await driver.getChannel(app, channel.id!))!;
 
   const positioner = new Positioner(store);
-  await positioner.updateDarwinReleasesFiles(app, upToDateChannel, 'x64');
+  await positioner.withLock(app, async (lock) => {
+    await positioner.updateDarwinReleasesFiles(lock, app, upToDateChannel, 'x64');
+  });
 };
 
 const checkField = (req: Express.Request, res: Express.Response, field: string) => {

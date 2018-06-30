@@ -182,6 +182,16 @@ export default class Positioner {
     }
   }
 
+  public updateDarwinReleasesFiles = async (lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, arch: string) => {
+    if (lock !== await this.currentLock(app)) return;
+    return await updateDarwinReleasesFiles({
+      app,
+      channel,
+      arch,
+      store: this.store,
+    });
+  }
+
   protected async handleDarwinUpload({
     app,
     channel,
