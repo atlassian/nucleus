@@ -15,7 +15,7 @@ describe('app endpoints', () => {
       it('should error if no name is provided', async () => {
         const response = await helpers.request
           .post('/app');
-        
+
         expect(response).to.have.status(400);
         expect(response.body.error).to.equal('Missing required body param: "name"');
       });
@@ -24,7 +24,7 @@ describe('app endpoints', () => {
         const response = await helpers.request
           .post('/app')
           .field('name', '');
-        
+
         expect(response).to.have.status(400);
         expect(response.body.error).to.equal('Your app name can not be an empty string');
       });
@@ -33,7 +33,7 @@ describe('app endpoints', () => {
         const response = await helpers.request
           .post('/app')
           .field('name', 'Test App');
-        
+
         expect(response).to.have.status(400);
         expect(response.body.error).to.equal('Missing icon file');
       });
@@ -43,7 +43,7 @@ describe('app endpoints', () => {
           .post('/app')
           .field('name', 'Test App')
           .attach('icon', fs.createReadStream(path.resolve(__dirname, 'fixtures', 'icon.png')));
-        
+
         expect(response).to.have.status(200);
         expect(response.body).to.have.property('name', 'Test App');
         expect(response.body).to.have.property('slug', 'Test-App', 'should sanitize the name into a slug');
@@ -79,7 +79,7 @@ describe('app endpoints', () => {
       it('should list all the apps', async () => {
         const response = await helpers.request
           .get('/app');
-        
+
         expect(response).to.be.json;
         expect(response.body).to.have.lengthOf(2);
         expect(response.body[0]).to.have.property('slug', 'Test-App');
@@ -93,7 +93,7 @@ describe('app endpoints', () => {
       it('should return not found when given an invalid app ID', async () => {
         const response = await helpers.request
           .get('/app/500');
-        
+
         expect(response).to.have.status(404);
         expect(response).to.be.json;
       });
@@ -102,7 +102,7 @@ describe('app endpoints', () => {
         const app = await helpers.createApp();
         const response = await helpers.request
           .get(`/app/${app.id}`);
-        
+
         expect(response).to.have.status(200);
         expect(response).to.be.json;
         expect(response.body).to.deep.equal(app);
@@ -121,7 +121,7 @@ describe('app endpoints', () => {
       it('should error if no icon is provided', async () => {
         const response = await helpers.request
           .post(`/app/${app.id}/icon`);
-      
+
         expect(response).to.have.status(400);
         expect(response.body.error).to.equal('Missing icon file');
       });
@@ -130,7 +130,7 @@ describe('app endpoints', () => {
         const response = await helpers.request
           .post(`/app/${app.id}/icon`)
           .attach('icon', fs.createReadStream(path.resolve(__dirname, 'fixtures', 'icon2.png')));
-      
+
         expect(response).to.have.status(200);
         expect(response).to.be.json;
         expect(response.body).to.deep.equal({ success: true });
@@ -140,6 +140,121 @@ describe('app endpoints', () => {
         expect(await helpers.store.getFile(`${app.slug}/icon.png`)).to.deep.equal(
           await fs.readFile(path.resolve(__dirname, 'fixtures', 'icon2.png')),
         );
+      });
+    });
+  });
+
+  describe('/app/:id/refresh_token', () => {
+    describe('POST', () => {
+      let app: NucleusApp;
+
+      before(async () => {
+        app = await helpers.createApp();
+      });
+
+      it('should regenerate the token for the given app', async () => {
+        const response = await helpers.request
+          .post(`/app/${app.id}/refresh_token`);
+
+        expect(response).to.have.status(200);
+        expect(response).to.be.json;
+        expect(response.body.token).to.not.equal(app.token);
+      });
+
+      it('should persist the change to the token', async () => {
+        const response = await helpers.request
+          .post(`/app/${app.id}/refresh_token`);
+
+        expect(response).to.have.status(200);
+        expect(response).to.be.json;
+        expect(response.body.token).to.not.equal(app.token);
+        
+        const appResponse = await helpers.request
+          .get(`/app/${app.id}`);
+
+        expect(appResponse.body.token).to.equal(response.body.token);
+      });
+    });
+  });
+
+  describe('/app/:id/team', () => {
+    describe('POST', () => {
+      let app: NucleusApp;
+
+      before(async () => {
+        app = await helpers.createApp();
+      });
+
+      it('should error if no team is provided', async () => {
+        const response = await helpers.request
+          .post(`/app/${app.id}/team`);
+
+        expect(response).to.have.status(400);
+        expect(response).to.be.json;
+        expect(response.body.error).to.equal('Missing required body param: "team"');
+      });
+
+      it('should error if the provided team is invalid JSON', async () => {
+        const response = await helpers.request
+          .post(`/app/${app.id}/team`)
+          .send({
+            team: 'abc[]',
+          });
+
+        expect(response).to.have.status(400);
+        expect(response).to.be.json;
+        expect(response.body.error).to.equal('Provided parameter "team" is not valid JSON');
+      });
+
+      it('should error if the provided team is not an array', async () => {
+        const response = await helpers.request
+          .post(`/app/${app.id}/team`)
+          .send({
+            team: '"foo"',
+          });
+
+        expect(response).to.have.status(400);
+        expect(response).to.be.json;
+        expect(response.body.error).to.equal('Bad team');
+      });
+
+      it('should error if the provided team does not contain the current user', async () => {
+        const response = await helpers.request
+          .post(`/app/${app.id}/team`)
+          .send({
+            team: '[]',
+          });
+
+        expect(response).to.have.status(400);
+        expect(response).to.be.json;
+        expect(response.body.error).to.equal('Bad team');
+      });
+
+      it('should update the team when given a valid team', async () => {
+        const response = await helpers.request
+          .post(`/app/${app.id}/team`)
+          .send({
+            team: '["charlie","test","new"]',
+          });
+
+        expect(response).to.have.status(200);
+        expect(response).to.be.json;
+        expect(response.body.team.sort()).to.deep.equal(['charlie', 'test', 'new'].sort());
+      });
+
+      it('should persist the update to the team when given a valid team', async () => {
+        await helpers.request
+          .post(`/app/${app.id}/team`)
+          .send({
+            team: '["charlie","thing"]',
+          });
+
+        const response = await helpers.request
+          .get(`/app/${app.id}`);
+
+        expect(response).to.have.status(200);
+        expect(response).to.be.json;
+        expect(response.body.team.sort()).to.deep.equal(['charlie', 'thing'].sort());
       });
     });
   });

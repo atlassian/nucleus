@@ -149,6 +149,31 @@ router.post('/:id/icon', requireLogin, noPendingMigrations, upload.single('icon'
   }
 }));
 
+router.post('/:id/refresh_token', requireLogin, noPendingMigrations, a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+  d(`Regenerating the authentication token for app: ${req.targetApp.slug}`);
+  res.json(await driver.resetAppToken(req.targetApp));
+}));
+
+router.post('/:id/team', requireLogin, noPendingMigrations, a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+  if (checkFields(req, res, ['team'])) {
+    let team: string[];
+    try {
+      team = JSON.parse(req.body.team);
+    } catch {
+      return res.status(400).json({ error: 'Provided parameter "team" is not valid JSON' });
+    }
+    if (Array.isArray(team) && team.length > 0 && team.indexOf(req.user.id) !== -1) {
+      d(`Updating team for app: '${req.targetApp.name}' to be: [${team.join(', ')}]`);
+      res.json(await driver.setTeam(req.targetApp, team));
+    } else {
+      d(`Invalid team array for app '${req.targetApp.slug}' was sent to Nucleus`);
+      res.status(400).json({ error: 'Bad team' });
+    }
+  }
+}));
+
 router.post('/:id/webhook', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['url', 'secret'])) {
@@ -185,26 +210,6 @@ router.post('/:id/channel', requireLogin, noPendingMigrations, a(async (req, res
     await positioner.initializeStructure(req.targetApp, channel);
     res.json(channel);
     runHooks(req.targetApp, hook => hook.newChannel(channel));
-  }
-}));
-
-router.post('/:id/refresh_token', requireLogin, noPendingMigrations, a(async (req, res) => {
-  if (stopNoPerms(req, res)) return;
-  d(`Regenerating the authentication token for app: ${req.targetApp.slug}`);
-  res.json(await driver.resetAppToken(req.targetApp));
-}));
-
-router.post('/:id/team', requireLogin, noPendingMigrations, a(async (req, res) => {
-  if (stopNoPerms(req, res)) return;
-  if (checkFields(req, res, ['team'])) {
-    const team: string[] = JSON.parse(req.body.team);
-    if (Array.isArray(team) && team.length > 0 && team.indexOf(req.user.id) !== -1) {
-      d(`Updating team for app: '${req.targetApp.name}' to be: [${team.join(', ')}]`);
-      res.json(await driver.setTeam(req.targetApp, team));
-    } else {
-      d(`Invalid team array for app '${req.targetApp.slug}' was sent to Nucleus`);
-      res.status(400).json({ error: 'Bad team' });
-    }
   }
 }));
 
