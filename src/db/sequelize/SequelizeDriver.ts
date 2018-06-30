@@ -192,7 +192,7 @@ export default class SequelizeDriver extends BaseDriver {
         if (fileName.endsWith('.exe') || fileName.endsWith('.msi')) return 'installer';
         break;
       case 'darwin':
-        if (fileName.endsWith('.dmg')) return 'installer';
+        if (fileName.endsWith('.dmg') || fileName.endsWith('.pkg')) return 'installer';
       case 'linux':
         if (fileName.endsWith('.rpm') || fileName.endsWith('.deb')) return 'installer';
     }
