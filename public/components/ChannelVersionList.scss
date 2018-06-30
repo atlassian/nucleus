@@ -14,10 +14,19 @@
   background: transparent;
   color: black;
   display: inline-block;
+  position: relative;
 
   &:hover {
     background: #0F4AA3;
     color: white;
+  }
+
+  .versionRolloutSuper {
+    font-size: 8px;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-style: italic;
   }
 }
 

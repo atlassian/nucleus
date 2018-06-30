@@ -131,6 +131,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
               this.props.channel.versions.map((version, index) => (
                 <div key={index} className={styles.versionSelect} onClick={this.showVersionModal(version)} style={{ color: version.dead ? 'red' : 'inherit', textDecoration: version.dead ? 'line-through' : '' }}>
                   {version.name}
+                  <span className={styles.versionRolloutSuper}>{version.rollout}%</span>
                 </div>
               ))
             )
@@ -349,13 +350,18 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
                 : (
                   <div style={{ marginTop: 4 }}>
                     <b>Current Rollout: </b>{this.state.modalVersion.version.rollout}%
-                    <a
-                      href="javascript: void"
-                      style={{ marginLeft: 8, cursor: this.props.hasPendingMigration ? 'not-allowed' : 'pointer' }}
-                      onClick={this.props.hasPendingMigration ? () => {} : this.modifyRollout}
-                    >
-                      Edit
-                    </a>
+                    {
+                      this.state.modalVersion.version.rollout !== 100 && !this.state.modalVersion.version.dead
+                      ? (
+                        <a
+                          href="javascript: void"
+                          style={{ marginLeft: 8, cursor: this.props.hasPendingMigration ? 'not-allowed' : 'pointer' }}
+                          onClick={this.props.hasPendingMigration ? () => {} : this.modifyRollout}
+                        >
+                          Edit
+                        </a>
+                      ) : null
+                    }
                   </div>
                 )
               }
