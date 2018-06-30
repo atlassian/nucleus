@@ -427,7 +427,7 @@ export default class SequelizeDriver extends BaseDriver {
     return await Migration.create<Migration>({
       key: migration.key,
       friendlyName: migration.friendlyName,
-      complete: false,
+      complete: (await App.count()) === 0,
     });
   }
 

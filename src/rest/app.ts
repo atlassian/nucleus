@@ -88,6 +88,10 @@ router.post('/', requireLogin, noPendingMigrations, upload.single('icon'), a(asy
       return res.status(400).json({ error: `You can not call your application ${req.body.name}` });
     }
 
+    if (req.body.name === '') {
+      return res.status(400).json({ error: 'Your app name can not be an empty string' });
+    }
+
     if (req.file) {
       d(`Creating a new application: '${req.body.name}'`);
       const iconBuffer = req.file.buffer;

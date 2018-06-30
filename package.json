@@ -7,7 +7,7 @@
     "nucleus": "./lib/index.js"
   },
   "scripts": {
-    "build-server": "tsc",
+    "build-server": "tsc && rm -rf lib/__spec__ lib/**/__spec__",
     "build-fe-prod": "webpack --config webpack.production.config.js",
     "clean": "rm -rf lib && rm -rf public_out",
     "commit": "git-cz",
@@ -22,7 +22,7 @@
     "start-server": "node lib/index.js",
     "start-server-dev": "nodemon --watch src --exec \"npm run build-server && cross-env DEBUG=nucleus* npm run start-server\" -e ts",
     "start-static": "make-dir .files && serve .files --port 9999 --silent",
-    "test": "mocha --compilers ts:ts-node/register src/**/__spec__/*_spec.ts src/**/**/__spec__/*_spec.ts"
+    "test": "mocha --compilers ts:ts-node/register src/__spec__/rest.ts src/**/__spec__/*_spec.ts src/**/**/__spec__/*_spec.ts"
   },
   "author": "Samuel Attard",
   "license": "Apache-2.0",
@@ -76,6 +76,7 @@
     "@navjobs/upload": "^3.1.3",
     "@types/body-parser": "^1.16.3",
     "@types/chai": "^4.0.4",
+    "@types/chai-http": "^3.0.4",
     "@types/compression": "^0.0.34",
     "@types/connect-redis": "^0.0.6",
     "@types/debug": "0.0.29",
@@ -101,6 +102,7 @@
     "@types/webpack-env": "^1.13.0",
     "awesome-typescript-loader": "^3.1.3",
     "chai": "^4.1.2",
+    "chai-http": "^4.0.0",
     "commitizen": "^2.9.6",
     "concurrently": "^3.5.0",
     "cross-env": "^5.0.0",
@@ -125,6 +127,7 @@
     "redux": "^3.6.0",
     "sass-loader": "^6.0.5",
     "serve": "^6.1.0",
+    "serve-handler": "^3.2.2",
     "sinon": "^4.0.0",
     "style-loader": "^0.18.1",
     "styled-components": "1.4.6",

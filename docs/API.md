@@ -8,6 +8,9 @@ The following API's, concepts and contracts are considered "Public API":
 
 * The [Upload Endpoint](Uploading.md)
 * The [healthcheck and deepcheck endpoints](Endpoints.md)
+* The style of the generated path to the icons files
+  * `/:appSlug/icon.png`
+  * `/:appSlug/icon.ico`
 * The style of the generated path to the `RELEASES` file
   * `/:appSlug/:channelId/win32/:arch/RELEASES`
 * The style of the generated path to the `RELEASES.json` files

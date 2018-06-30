@@ -9,7 +9,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 
 import { createA } from './utils/a';
-import { port, gpgSigningKey } from './config';
+import { port, gpgSigningKey, localAuth } from './config';
 import driver from './db/driver';
 import store from './files/store';
 import adminRouter from './rest/admin';
@@ -30,6 +30,25 @@ app.use(compression());
 app.use(express.static(path.resolve(__dirname, '..', 'public_out')));
 
 app.use(bodyParser.json());
+
+// THIS IS VERY DANGEROUS, WE USE IT TO BYPASS AUTH IN TESTING
+if (process.env.UNSAFELY_DISABLE_NUCLEUS_AUTH) {
+  d('You have set UNSAFELY_DISABLE_NUCLEUS_AUTH.  THIS IS VERY DANGEROUS');
+  app.use((req, res, next) => {
+    if (!req.user) {
+      const user = localAuth[0];
+      req.user = {
+        id: user.username,
+        displayName: user.displayName,
+        isAdmin: true,
+        photos: [
+          { value: user.photo },
+        ],
+      };
+    }
+    next();
+  });
+}
 
 app.use((req, res, next) => {
   res.error = (err) => {
