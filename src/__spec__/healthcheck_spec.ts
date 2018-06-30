@@ -8,40 +8,44 @@ describe('healthcheck endpoints', () => {
   before(helpers.startTestNucleus);
 
   describe('/healthcheck', () => {
-    it('should respond 200 OK', async () => {
-      const response = await helpers.request
-        .get('/healthcheck')
-        .send();
+    describe('GET', () => {
+      it('should respond 200 OK', async () => {
+        const response = await helpers.request
+          .get('/healthcheck')
+          .send();
 
-      expect(response).to.have.status(200);
-    });
+        expect(response).to.have.status(200);
+      });
 
-    it('should response with a JSON body', async () => {
-      const response = await helpers.request
-        .get('/healthcheck')
-        .send();
-      
-      expect(response).to.be.json;
-      expect(response.body).to.deep.equal({ alive: true });
+      it('should response with a JSON body', async () => {
+        const response = await helpers.request
+          .get('/healthcheck')
+          .send();
+        
+        expect(response).to.be.json;
+        expect(response.body).to.deep.equal({ alive: true });
+      });
     });
   });
 
   describe('/deepcheck', () => {
-    it('should respond 200 OK', async () => {
-      const response = await helpers.request
-        .get('/deepcheck')
-        .send();
-      
-      expect(response).to.have.status(200);
-    });
+    describe('GET', () => {
+      it('should respond 200 OK', async () => {
+        const response = await helpers.request
+          .get('/deepcheck')
+          .send();
+        
+        expect(response).to.have.status(200);
+      });
 
-    it('should respond with a JSON body', async () => {
-      const response = await helpers.request
-        .get('/deepcheck')
-        .send();
-      
-      expect(response).to.be.json;
-      expect(response.body).to.deep.equal({ alive: true });
+      it('should respond with a JSON body', async () => {
+        const response = await helpers.request
+          .get('/deepcheck')
+          .send();
+        
+        expect(response).to.be.json;
+        expect(response.body).to.deep.equal({ alive: true });
+      });
     });
   });
 
