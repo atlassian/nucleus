@@ -7,7 +7,7 @@ env:
     COMMIT=${TRAVIS_COMMIT::8}
 
 before_script: cp config.template.js config.js
-script: yarn lint && yarn test
+script: yarn lint && yarn build-server && yarn test
 
 after_success:
   - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
