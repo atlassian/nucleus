@@ -38,6 +38,15 @@ describe('app endpoints', () => {
         expect(response.body.error).to.equal('Missing icon file');
       });
 
+      it('should error if a reserved name is provided', async () => {
+        const response = await helpers.request
+          .post('/app')
+          .field('name', '__healthcheck');
+
+        expect(response).to.have.status(400);
+        expect(response.body.error).to.equal('You can not call your application __healthcheck');
+      });
+
       it('should create an app with valid params', async () => {
         const response = await helpers.request
           .post('/app')
