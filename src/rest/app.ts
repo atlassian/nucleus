@@ -177,6 +177,11 @@ router.post('/:id/team', requireLogin, noPendingMigrations, a(async (req, res) =
 router.post('/:id/webhook', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['url', 'secret'])) {
+    if (typeof req.body.url !== 'string' ||
+        (!req.body.url.startsWith('https://') && !req.body.url.startsWith('http://')) ||
+        req.body.url.startsWith('http://localhost') || req.body.url.startsWith('http://127.0.0.1')) {
+      return res.status(400).json({ error: 'Invalid URL provided' });
+    }
     d(`Creating new WebHook: '${req.body.url}' for app: '${req.targetApp.slug}'`);
     const rawHook = await driver.createWebHook(req.targetApp, req.body.url, req.body.secret);
     const hook = WebHook.fromNucleusHook(req.targetApp, rawHook);
