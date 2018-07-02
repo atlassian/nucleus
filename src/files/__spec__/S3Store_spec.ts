@@ -129,6 +129,7 @@ describe('S3Store', () => {
       expect(await store.putFile('myKey', Buffer.from('value'), true)).to.equal(true);
       expect(cf!).to.equal(undefined);
       clearTimeout(CloudFrontBatchInvalidator.get(store).nextTimer);
+      (CloudFrontBatchInvalidator.get(store) as any).lastAdd = 0;
       CloudFrontBatchInvalidator.get(store).runJob();
       expect(cf!.createInvalidation.callCount).to.equal(1);
       const invalidateOptions = cf!.createInvalidation.firstCall.args[0];
@@ -156,6 +157,7 @@ describe('S3Store', () => {
       expect(await store.putFile('myKey2', Buffer.from('value2'), true)).to.equal(true);
       expect(cf!).to.equal(undefined);
       clearTimeout(CloudFrontBatchInvalidator.get(store).nextTimer);
+      (CloudFrontBatchInvalidator.get(store) as any).lastAdd = 0;
       CloudFrontBatchInvalidator.get(store).runJob();
       expect(cf!.createInvalidation.callCount).to.equal(1);
       const invalidateOptions = cf!.createInvalidation.firstCall.args[0];
@@ -185,6 +187,7 @@ describe('S3Store', () => {
       expect(await store.putFile('myKey2', Buffer.from('value2'), true)).to.equal(true);
       expect(cf!).to.equal(undefined);
       clearTimeout(CloudFrontBatchInvalidator.get(store).nextTimer);
+      (CloudFrontBatchInvalidator.get(store) as any).lastAdd = 0;
       CloudFrontBatchInvalidator.get(store).runJob();
       clearTimeout(CloudFrontBatchInvalidator.get(store).nextTimer);
       expect(cf!.createInvalidation.callCount).to.equal(1);
@@ -194,6 +197,7 @@ describe('S3Store', () => {
       expect(invalidateOptions.InvalidationBatch.Paths.Items).to.deep.equal(['/myKey', '/myKey2']);
       expect(await store.putFile('myKey3', Buffer.from('value3'), true)).to.equal(true);
       clearTimeout(CloudFrontBatchInvalidator.get(store).nextTimer);
+      (CloudFrontBatchInvalidator.get(store) as any).lastAdd = 0;
       CloudFrontBatchInvalidator.get(store).runJob();
       clearTimeout(CloudFrontBatchInvalidator.get(store).nextTimer);
       expect(count).to.equal(2);

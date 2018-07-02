@@ -42,6 +42,7 @@ export class CloudFrontBatchInvalidator {
   public addToBatch = (key: string) => {
     if (!this.cloudfrontConfig) return;
     this.queue.push(`/${key}`);
+    this.lastAdd = Date.now();
   }
 
   private queueUp() {
@@ -54,14 +55,17 @@ export class CloudFrontBatchInvalidator {
       return this.queueUp();
     }
     d('running cloudfront batch invalidator');
+    const itemsToUse = this.queue.slice(0, 500);
+    this.queue = this.queue.slice(500);
+
     const cloudFront = new AWS.CloudFront();
     cloudFront.createInvalidation({
       DistributionId: this.cloudfrontConfig!.distributionId,
       InvalidationBatch: {
         CallerReference: hat(),
         Paths: {
-          Quantity: Math.min(500, this.queue.length),
-          Items: this.queue.slice(0, 500),
+          Quantity: itemsToUse.length,
+          Items: itemsToUse,
         },
       },
     }, (err, invalidateInfo) => {
@@ -71,10 +75,9 @@ export class CloudFrontBatchInvalidator {
           message: 'Failed to invalidate',
           keys: this.queue.slice(0, 500),
         });
-        this.queue = this.queue.slice(500).concat(this.queue.slice(0, 500));
+        this.queue.push(...itemsToUse);
       } else {
         d('batch invalidation succeeded, moving along');
-        this.queue = this.queue.slice(500);
       }
       this.queueUp();
     });

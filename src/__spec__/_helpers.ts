@@ -12,7 +12,7 @@ let child: cp.ChildProcess | null = null;
 let server: http.Server | null = null;
 
 export const startTestNucleus = async function (this: any) {
-  this.timeout(3000);
+  this.timeout(7000);
 
   if (child !== null || server !== null) {
     throw new Error('Nucleus is already running, something went wrong in the tests');
