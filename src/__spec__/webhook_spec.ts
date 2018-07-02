@@ -109,7 +109,9 @@ describe('webbhook endpoints', () => {
 
   describe('/app/:id/webhook/:webhookId', () => {
     describe('DELETE', () => {
-      it('should error if the webhook does not exist', async () => {
+      it('should error if the webhook does not exist', async function () {
+        this.timeout(4000);
+
         const response = await helpers.request
           .del(`/app/${app.id}/webhook/100`);
 
@@ -118,7 +120,9 @@ describe('webbhook endpoints', () => {
         expect(response.body.error).to.equal('Not Found');
       });
 
-      it('should unregister a valid webhook', async () => {
+      it('should unregister a valid webhook', async function () {
+        this.timeout(4000);
+
         const response = await helpers.request
           .del(`/app/${app.id}/webhook/1`);
 
