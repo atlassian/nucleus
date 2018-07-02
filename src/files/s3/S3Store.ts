@@ -12,8 +12,77 @@ AWS.config.credentials = new AWS.EC2MetadataCredentials({
   maxRetries: 10,
 });
 
+const invalidators: {
+  [id: string]: CloudFrontBatchInvalidator;
+} = {};
+
+export class CloudFrontBatchInvalidator {
+  private lastAdd: number = 0;
+  private queue: string[] = [];
+  nextTimer: NodeJS.Timer;
+
+  static noopInvalidator = new CloudFrontBatchInvalidator(null);;
+
+  static get(store: S3Store) {
+    if (!store.s3Config.cloudfront) {
+      return CloudFrontBatchInvalidator.noopInvalidator;
+    }
+    if (!invalidators[store.s3Config.cloudfront.distributionId]) {
+      invalidators[store.s3Config.cloudfront.distributionId] = new CloudFrontBatchInvalidator(store.s3Config.cloudfront);
+    }
+    return invalidators[store.s3Config.cloudfront.distributionId];
+  }
+
+  constructor(private cloudfrontConfig: S3Options['cloudfront']) {
+    if (cloudfrontConfig) {
+      this.queueUp();
+    }
+  }
+
+  public addToBatch = (key: string) => {
+    if (!this.cloudfrontConfig) return;
+    this.queue.push(`/${key}`);
+  }
+
+  private queueUp() {
+    clearTimeout(this.nextTimer);
+    this.nextTimer = setTimeout(() => this.runJob(), 30000);
+  }
+
+  runJob() {
+    if (this.queue.length === 0 || Date.now() - this.lastAdd <= 20000) {
+      return this.queueUp();
+    }
+    d('running cloudfront batch invalidator');
+    const cloudFront = new AWS.CloudFront();
+    cloudFront.createInvalidation({
+      DistributionId: this.cloudfrontConfig!.distributionId,
+      InvalidationBatch: {
+        CallerReference: hat(),
+        Paths: {
+          Quantity: Math.min(500, this.queue.length),
+          Items: this.queue.slice(0, 500),
+        },
+      },
+    }, (err, invalidateInfo) => {
+      if (err) {
+        console.error({
+          err,
+          message: 'Failed to invalidate',
+          keys: this.queue.slice(0, 500),
+        });
+        this.queue = this.queue.slice(500).concat(this.queue.slice(0, 500));
+      } else {
+        d('batch invalidation succeeded, moving along');
+        this.queue = this.queue.slice(500);
+      }
+      this.queueUp();
+    });
+  }
+}
+
 export default class S3Store implements IFileStore {
-  constructor(private s3Config = config.s3) {}
+  constructor(public s3Config = config.s3) {}
 
   public async hasFile(key: string) {
     const s3 = new AWS.S3();
@@ -55,21 +124,8 @@ export default class S3Store implements IFileStore {
       }));
       wrote = true;
     }
-    if (overwrite && this.s3Config.cloudfront) {
-      d(`Cloudfront config detected, sending invalidation request for: '${key}'`);
-      const cloudFront = new AWS.CloudFront();
-      cloudFront.createInvalidation({
-        DistributionId: this.s3Config.cloudfront.distributionId,
-        InvalidationBatch: {
-          CallerReference: hat(),
-          Paths: {
-            Quantity: 1,
-            Items: [`/${key}`],
-          },
-        },
-      }, (err, invalidateInfo) => {
-        if (err) console.error('Failed to invalidate:', key, ' Error:', err);
-      });
+    if (overwrite) {
+      CloudFrontBatchInvalidator.get(this).addToBatch(key);
     }
     return wrote;
   }
