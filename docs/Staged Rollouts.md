@@ -1,7 +1,7 @@
 # Staged Rollouts
 
 Nucleus has built in support for staged rollouts on some platforms. Currently
-we support Staged Rollouts on `darwin` only with `win32` support coming soon.
+we support Staged Rollouts on `darwin` and `win32`.
 
 Linux support for staged rollouts is **unlikely** to ever happen, you should
 take this into account when shipping new releases.  As soon as you release

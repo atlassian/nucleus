@@ -77,6 +77,7 @@ class MigrationList extends React.PureComponent<MigrationListComponentProps & Mi
         alert('Migration Complete');
         window.location.reload();
       });
+      return;
     }
     const response = await fetch(
       `rest/migration/${this.state.activeMigration}`,
@@ -139,7 +140,7 @@ class MigrationList extends React.PureComponent<MigrationListComponentProps & Mi
             ) : null
           }
           {
-            this.state.migrationItems
+            this.state.migrationItems && this.state.activeMigration === migration.key
             ? (
               <div className={styles.migrationProgress}>
                 <i>{done} / {total}</i>

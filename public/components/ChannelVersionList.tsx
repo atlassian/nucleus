@@ -102,6 +102,8 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
         arch: draftVersion.arch,
         platform: draftVersion.platform,
         type: 'unknown' as FileType,
+        sha1: '',
+        sha256: '',
       })),
     };
     return ret;

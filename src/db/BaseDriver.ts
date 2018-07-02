@@ -32,6 +32,8 @@ export abstract class IDBDriver {
   // Migrations
   public abstract addMigrationIfNotExists(migration: BaseMigration<any>): Promise<NucleusMigration>;
   public abstract getMigrations(): Promise<NucleusMigration[]>;
+  // SHA
+  public abstract storeSHAs(file: NucleusFile, hashes: HashSet): Promise<NucleusFile | null>;
 }
 
 export default abstract class BaseDriver extends IDBDriver {

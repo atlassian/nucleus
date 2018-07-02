@@ -124,10 +124,13 @@ interface NucleusChannel {
 }
 
 interface NucleusFile {
+  id?: any;
   fileName: string;
   arch: string;
   platform: NucleusPlatform;
   type: FileType;
+  sha1: string;
+  sha256: string;
 }
 
 interface NucleusVersion {
@@ -166,9 +169,15 @@ interface IFileStore {
   putFile(key: string, data: Buffer, overwriteExisting?: boolean): Promise<boolean>;
   hasFile(key: string): Promise<boolean>;
   getFile(key: string): Promise<Buffer>;
+  getFileSize(key: string): Promise<number>;
   getPublicBaseUrl(): Promise<string>;
   deletePath(key: string): Promise<void>;
   listFiles(prefix: string): Promise<string[]>;
+}
+
+interface HashSet {
+  sha1: string;
+  sha256: string;
 }
 
 declare namespace Express {

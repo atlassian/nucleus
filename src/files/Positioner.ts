@@ -6,6 +6,7 @@ import * as semver from 'semver';
 import { initializeAptRepo, addFileToAptRepo } from './utils/apt';
 import { initializeYumRepo, addFileToYumRepo } from './utils/yum';
 import { updateDarwinReleasesFiles } from './utils/darwin';
+import { updateWin32ReleasesFiles } from './utils/win32';
 
 const hat = require('hat');
 
@@ -159,6 +160,17 @@ export default class Positioner {
     return !greaterVersion;
   }
 
+  public updateWin32ReleasesFiles = async (lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, arch: string) => {
+    if (lock !== await this.currentLock(app)) return;
+    return await updateWin32ReleasesFiles({
+      app,
+      channel,
+      arch,
+      store: this.store,
+      positioner: this,
+    });
+  }
+
   protected async handleWindowsUpload({
     app,
     channel,
@@ -174,11 +186,7 @@ export default class Positioner {
 
     if (await this.store.putFile(key, fileData) && file.fileName.endsWith('.nupkg')) {
       d('Pushed a nupkg file to the file store so appending release information to RELEASES');
-      const releasesKey = path.posix.join(root, 'RELEASES');
-      let RELEASES = (await this.store.getFile(releasesKey)).toString('utf8');
-      const hash = crypto.createHash('SHA1').update(fileData).digest('hex').toUpperCase();
-      RELEASES += `${RELEASES.length > 0 ? '\n' : ''}${hash} ${file.fileName} ${fileData.byteLength}`;
-      await this.store.putFile(releasesKey, Buffer.from(RELEASES, 'utf8'), true);
+      await updateWin32ReleasesFiles({ app, channel, arch: file.arch, store: this.store, positioner: this });
     }
   }
 

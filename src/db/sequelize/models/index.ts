@@ -184,6 +184,12 @@ export class File extends Model<File> {
   @Column(DataType.STRING)
   type: string;
 
+  @Column(DataType.STRING({ length: 40 }))
+  sha1: string;
+
+  @Column(DataType.STRING({ length: 64 }))
+  sha256: string;
+
   @ForeignKey(() => Version)
   @Column(DataType.INTEGER)
   versionId: number;
@@ -206,25 +212,31 @@ export class Migration extends Model<Migration> implements NucleusMigration {
 
 const d = debug('nucleus:db:migrator');
 
-const upwardsMigrations: ((queryInterface: QueryInterface) => Promise<void>)[] = [
-  async function addRolloutToVersion(queryInterface: QueryInterface) {
-    const versionDescription = await queryInterface.describeTable(Version.getTableName());
-    if (Object.keys(versionDescription).indexOf('rollout') === -1) {
-      await queryInterface.addColumn(Version.getTableName() as string, 'rollout', {
-        type: (Version as any).attributes.rollout.type,
+function createAddColumnMigration<T>(columnName: string, table: typeof Model, defaultValue: T) {
+  return async function addColumnToTable(queryInterface: QueryInterface) {
+    const description = await queryInterface.describeTable(table.getTableName());
+    if (Object.keys(description).indexOf(columnName) === -1) {
+      await queryInterface.addColumn(table.getTableName() as string, columnName, {
+        type: (table as any).attributes[columnName].type,
       });
-      await Version.update({
-        rollout: 100,
+      await table.update({
+        [columnName]: defaultValue,
       }, {
         where: {
-          rollout: {
+          [columnName]: {
             $eq: null,
           },
         },
       });
-      d('adding the rollout column to version table');
+      d(`adding the ${columnName} column to the ${table.getTableName()} table`);
     }
-  },
+  };
+}
+
+const upwardsMigrations: ((queryInterface: QueryInterface) => Promise<void>)[] = [
+  createAddColumnMigration('rollout', Version, 100),
+  createAddColumnMigration('sha1', File, ''),
+  createAddColumnMigration('sha256', File, ''),
 ];
 
 export default async function () {

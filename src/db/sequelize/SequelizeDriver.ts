@@ -122,14 +122,21 @@ export default class SequelizeDriver extends BaseDriver {
       name: version.name,
       dead: version.dead,
       rollout: version.rollout,
-      files: (version.files || []).map(f => f.get() as File).map(file => ({
-        fileName: file.fileName,
-        arch: file.arch,
-        platform: file.platform as NucleusPlatform,
-        type: file.type as FileType,
-      })),
+      files: (version.files || []).map(f => f.get() as File).map(this.fixFileStruct),
     })));
     return newChannel;
+  }
+
+  private fixFileStruct(file: File): NucleusFile {
+    return {
+      id: file.id,
+      fileName: file.fileName,
+      arch: file.arch,
+      platform: file.platform as NucleusPlatform,
+      type: file.type as FileType,
+      sha1: file.sha1,
+      sha256: file.sha256,
+    };
   }
 
   public async getApps() {
@@ -433,5 +440,17 @@ export default class SequelizeDriver extends BaseDriver {
 
   public async getMigrations() {
     return await Migration.findAll<Migration>();
+  }
+
+  public async storeSHAs(file: NucleusFile, hashes: HashSet) {
+    const rawFile = await File.findById<File>(file.id);
+    if (!rawFile) return null;
+
+    rawFile.sha1 = hashes.sha1;
+    rawFile.sha256 = hashes.sha256;
+
+    await rawFile.save();
+
+    return this.fixFileStruct(rawFile);
   }
 }

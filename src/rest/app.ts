@@ -8,6 +8,7 @@ import { createA } from '../utils/a';
 import driver from '../db/driver';
 import store from '../files/store';
 import Positioner from '../files/Positioner';
+import { generateSHAs } from '../files/utils/sha';
 import WebHook from './WebHook';
 
 import { requireLogin, noPendingMigrations } from './_helpers';
@@ -23,6 +24,8 @@ const updateStaticReleaseMetaData = async (app: NucleusApp, channel: NucleusChan
   const positioner = new Positioner(store);
   await positioner.withLock(app, async (lock) => {
     await positioner.updateDarwinReleasesFiles(lock, app, upToDateChannel, 'x64');
+    await positioner.updateWin32ReleasesFiles(lock, app, upToDateChannel, 'ia32');
+    await positioner.updateWin32ReleasesFiles(lock, app, upToDateChannel, 'x64');
   });
 };
 
@@ -296,13 +299,24 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
       d(`Releasing file: ${file.fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
 
       const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, file.fileName, save.cipherPassword);
-      await positioner.handleUpload(lock, {
+      const upToDateFile = await driver.storeSHAs(
         file,
-        app: req.targetApp,
-        channel: upToDateChannel,
-        internalVersion: storedVersion,
-        fileData: data,
-      });
+        generateSHAs(data),
+      );
+      if (upToDateFile) {
+        // Use the Hashed file when handling the upload
+        storedVersion.files = storedVersion.files.map(f => f.id === upToDateFile.id ? upToDateFile : f);
+
+        await positioner.handleUpload(lock, {
+          file: upToDateFile,
+          app: req.targetApp,
+          channel: upToDateChannel,
+          internalVersion: storedVersion,
+          fileData: data,
+        });
+      } else {
+        d('Database inconsistency detected while releasing for file:', file.id);
+      }
     }
     await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
   }))) {

@@ -13,7 +13,7 @@ A configurable and versatile update server for all your Electron apps
 * One command to run so insanely simple to set up
 * [Staged Rollouts](docs/Staged%20Rollouts.md)
   * macOS
-  * Windows _Coming Soon_
+  * Windows
 * [Latest Downloads](docs/Latest%20Releases.md) - Static URL's for downloading the latest version of your application
 * Platform Support:
   * macOS

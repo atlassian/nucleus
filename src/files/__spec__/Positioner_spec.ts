@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { stub, SinonStub } from 'sinon';
 
 import Positioner from '../Positioner';
+import { generateSHAs } from '../utils/sha';
 
 const fakeApp: NucleusApp = {
   id: 'fake_id',
@@ -59,6 +60,7 @@ describe('Positioner', () => {
     deletePath: SinonStub;
     listFiles: SinonStub;
     hasFile: SinonStub;
+    getFileSize: SinonStub;
   };
   let positioner: Positioner;
   let originalDateToString: SinonStub;
@@ -80,6 +82,7 @@ describe('Positioner', () => {
       deletePath: promiseStub(),
       listFiles: promiseStub().returns([]),
       hasFile: promiseStub().returns(true),
+      getFileSize: promiseStub().returns(Promise.resolve(0)),
     };
     fakeStore.putFile.returns(Promise.resolve(true));
     positioner = new Positioner(fakeStore);
@@ -103,6 +106,7 @@ describe('Positioner', () => {
       channel: fakeChannel,
       internalVersion: { name: '0.0.2' } as any,
       file: {
+        ...generateSHAs(Buffer.from('')),
         arch: 'magicBit' as any,
         platform: 'win32',
         fileName: 'thing.exe',
@@ -119,6 +123,7 @@ describe('Positioner', () => {
       channel: fakeChannel,
       internalVersion: { name: '0.0.2' } as any,
       file: {
+        ...generateSHAs(Buffer.from('')),
         arch: 'x64',
         platform: 'chromeOS' as any,
         fileName: 'thing.apk',
@@ -216,6 +221,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2', rollout: 100 } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'ia32',
             platform: 'win32',
             fileName: 'thing.exe',
@@ -235,6 +241,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2', rollout: 100 } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'x64',
             platform: 'darwin',
             fileName: 'thing.dmg',
@@ -253,6 +260,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2', rollout: 100 } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'ia32',
             platform: 'linux',
             fileName: 'thing.deb',
@@ -276,6 +284,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2', rollout: 100 } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'ia32',
             platform: 'linux',
             fileName: 'thing.deb',
@@ -293,6 +302,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2', rollout: 100, dead: true } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'ia32',
             platform: 'linux',
             fileName: 'thing.deb',
@@ -310,6 +320,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2', rollout: 99 } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'ia32',
             platform: 'linux',
             fileName: 'thing.deb',
@@ -328,6 +339,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'ia32',
             platform: 'win32',
             fileName: 'thing.wet',
@@ -345,6 +357,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(fakeBuffer),
             arch: 'ia32',
             platform: 'win32',
             fileName: 'thing.exe',
@@ -367,6 +380,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(firstBuffer),
             arch: 'ia32',
             platform: 'win32',
             fileName: 'thing.exe',
@@ -384,6 +398,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(secondBuffer),
             arch: 'x64',
             platform: 'win32',
             fileName: 'thing.exe',
@@ -405,6 +420,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(fakeBuffer),
             arch: 'ia32',
             platform: 'win32',
             fileName: 'thing-full.nupkg',
@@ -412,7 +428,8 @@ describe('Positioner', () => {
           },
           fileData: fakeBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // NUPKG + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(fakeStore.putFile.firstCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/thing-full.nupkg',
         );
@@ -422,51 +439,76 @@ describe('Positioner', () => {
 
       it('should update the RELEASES file with correct hash and filename for all nupkg uploads', async () => {
         const fakeBuffer = Buffer.from('my nupkg');
-        fakeStore.getFile.returns(Promise.resolve(Buffer.from('')));
+        fakeStore.getFileSize.onFirstCall().returns(8);
+        const fullFile = {
+          ...generateSHAs(fakeBuffer),
+          arch: 'ia32',
+          platform: 'win32',
+          fileName: 'thing-full.nupkg',
+          type: 'update',
+        } as any;
+        const fakeVersion = { name: '0.0.2', rollout: 0, files: [fullFile] } as any;
         await positioner.handleUpload(lock, {
           app: fakeApp,
-          channel: fakeChannel,
-          internalVersion: { name: '0.0.2' } as any,
-          file: {
-            arch: 'ia32',
-            platform: 'win32',
-            fileName: 'thing-full.nupkg',
-            type: 'update',
-          },
+          channel: Object.assign({}, fakeChannel, {
+            versions: [fakeVersion],
+          }),
+          internalVersion: fakeVersion,
+          file: fullFile,
           fileData: fakeBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // NUPKG + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/RELEASES',
         );
         expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal(
-          '0F2320FC3B29E1CD9F989DBF547BCD4D21D3BD12 thing-full.nupkg 8',
+          '0F2320FC3B29E1CD9F989DBF547BCD4D21D3BD12 https://foo.bar/fake_slug/fake_channel_id/win32/ia32/thing-full.nupkg 8',
         );
         expect(fakeStore.putFile.secondCall.args[2]).to.equal(true, 'should override existing RELEASES');
       });
 
       it('should append to the existing RELEASES file if available', async () => {
-        const fakeBuffer = Buffer.from('my delta nupkg');
+        const fakeFullBuffer = Buffer.from('my nupkg');
+        const fakeDeltaBuffer = Buffer.from('my delta nupkg');
         fakeStore.getFile.returns(Promise.resolve(Buffer.from('0F2320FC3B29E1CD9F989DBF547BCD4D21D3BD12 thing-full.nupkg 8')));
+        const fullFile = {
+          ...generateSHAs(fakeFullBuffer),
+          arch: 'ia32',
+          platform: 'win32',
+          fileName: 'thing-full.nupkg',
+          type: 'update',
+        } as any;
+        const deltaFile = {
+          ...generateSHAs(fakeDeltaBuffer),
+          arch: 'ia32',
+          platform: 'win32',
+          fileName: 'thing-delta.nupkg',
+          type: 'update',
+        } as any;
+        fakeStore.getFileSize.onFirstCall().returns(8);
+        fakeStore.getFileSize.onSecondCall().returns(14);
         await positioner.handleUpload(lock, {
           app: fakeApp,
-          channel: fakeChannel,
+          channel: Object.assign({}, fakeChannel, {
+            versions: [{
+              name: '0.0.2',
+              rollout: 100,
+              files: [fullFile, deltaFile],
+            }],
+          }),
           internalVersion: { name: '0.0.2' } as any,
-          file: {
-            arch: 'ia32',
-            platform: 'win32',
-            fileName: 'thing-delta.nupkg',
-            type: 'update',
-          },
-          fileData: fakeBuffer,
+          file: deltaFile,
+          fileData: fakeDeltaBuffer,
         });
-        expect(fakeStore.putFile.callCount).to.equal(2);
+        // NUPKG + REF + 101*RELEASES
+        expect(fakeStore.putFile.callCount).to.equal(2 + 101);
         expect(fakeStore.putFile.secondCall.args[0]).to.equal(
           'fake_slug/fake_channel_id/win32/ia32/RELEASES',
         );
         expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal(
-          '0F2320FC3B29E1CD9F989DBF547BCD4D21D3BD12 thing-full.nupkg 8\n' +
-          'EF5518DDAF73D40E2A7A31C627702CFFBF59862D thing-delta.nupkg 14',
+          '0F2320FC3B29E1CD9F989DBF547BCD4D21D3BD12 https://foo.bar/fake_slug/fake_channel_id/win32/ia32/thing-full.nupkg 8\n' +
+          'EF5518DDAF73D40E2A7A31C627702CFFBF59862D https://foo.bar/fake_slug/fake_channel_id/win32/ia32/thing-delta.nupkg 14',
         );
       });
 
@@ -478,6 +520,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(fakeBuffer),
             arch: 'ia32',
             platform: 'win32',
             fileName: 'thing-delta.nupkg',
@@ -496,6 +539,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'x64',
             platform: 'darwin',
             fileName: 'thing.exe',
@@ -508,6 +552,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'x64',
             platform: 'darwin',
             fileName: 'thing.lel',
@@ -525,6 +570,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(fakeBuffer),
             arch: 'x64',
             platform: 'darwin',
             fileName: 'thing.dmg',
@@ -546,6 +592,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(fakeBuffer),
             arch: 'x64',
             platform: 'darwin',
             fileName: 'thing.zip',
@@ -564,6 +611,7 @@ describe('Positioner', () => {
       it('should create a RELEASES.json file if it doesn\'t exist when uploading zips', async () => {
         const fakeBuffer = Buffer.from('my zip');
         const file: NucleusFile = {
+          ...generateSHAs(fakeBuffer),
           arch: 'x64',
           platform: 'darwin',
           fileName: 'thing.zip',
@@ -592,6 +640,7 @@ describe('Positioner', () => {
       it('should update the RELEASES.json file if it already exits when uploading zips', async () => {
         const fakeBuffer = Buffer.from('my zip');
         const file1: NucleusFile = {
+          ...generateSHAs(fakeBuffer),
           arch: 'x64',
           platform: 'darwin',
           fileName: 'thing2.zip',
@@ -620,6 +669,7 @@ describe('Positioner', () => {
       it('should update the RELEASES.json file even if the version is already in the releases array but not use the new file', async () => {
         const fakeBuffer = Buffer.from('my zip');
         const file: NucleusFile = {
+          ...generateSHAs(fakeBuffer),
           arch: 'x64',
           platform: 'darwin',
           fileName: 'thing3.zip',
@@ -641,6 +691,7 @@ describe('Positioner', () => {
       it('should not update the "currentRelease" property in the RELEASES.json file if it is higher than the new release', async () => {
         const fakeBuffer = Buffer.from('my zip');
         const file: NucleusFile = {
+          ...generateSHAs(fakeBuffer),
           arch: 'x64',
           platform: 'darwin',
           fileName: 'thing2.zip',
@@ -687,6 +738,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(fakeBuffer),
             arch: 'x64',
             platform: 'darwin',
             fileName: 'thing2.zip',
@@ -706,6 +758,7 @@ describe('Positioner', () => {
           channel: fakeChannel,
           internalVersion: { name: '0.0.2' } as any,
           file: {
+            ...generateSHAs(Buffer.from('')),
             arch: 'ia32',
             platform: 'linux',
             fileName: 'thing.dev',

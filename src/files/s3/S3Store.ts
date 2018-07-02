@@ -26,6 +26,17 @@ export default class S3Store implements IFileStore {
     }));
   }
 
+  public async getFileSize(key: string) {
+    const s3 = new AWS.S3();
+    return await new Promise<number>(resolve => s3.headObject({
+      Bucket: this.s3Config.bucketName,
+      Key: key,
+    }, (err, info) => {
+      if (err && err.code === 'NotFound') return resolve(0);
+      resolve(info.ContentLength || 0);
+    }));
+  }
+
   public async putFile(key: string, data: Buffer, overwrite = false) {
     d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
     const s3 = new AWS.S3();

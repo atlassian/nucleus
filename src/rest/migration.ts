@@ -36,7 +36,7 @@ migrationRouter.get('/:key', a(async (req, res) => {
   }
 
   const items = await migration.getItems();
-  if (items.length === 0) {
+  if (items.length === 0 || !items.some(item => !item.done)) {
     req.migration.internal.complete = true;
     await (req.migration.internal as any).save();
   }
