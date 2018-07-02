@@ -21,7 +21,7 @@ export class CloudFrontBatchInvalidator {
   private queue: string[] = [];
   nextTimer: NodeJS.Timer;
 
-  static noopInvalidator = new CloudFrontBatchInvalidator(null);;
+  static noopInvalidator = new CloudFrontBatchInvalidator(null);
 
   static get(store: S3Store) {
     if (!store.s3Config.cloudfront) {
