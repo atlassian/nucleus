@@ -29,34 +29,44 @@ export default class LatestInstallerMigration extends BaseMigration<LatestInstal
     const apps = await this.mDriver.getApps();
     const itemFetchers: (() => Promise<MigrationItem<LatestInstallerMigrationItem>>)[] = [];
 
+    const latestThings: {
+      [latestKey: string]: {
+        indexKey: string;
+        version: string;
+      };
+    } = {};
+
     for (const app of apps) {
       for (const channel of app.channels) {
         const rolledOutVersions = channel.versions.filter(v => v.rollout === 100 && !v.dead);
-        if (rolledOutVersions.length === 0) continue;
 
-        // Find latest version
-        let version = rolledOutVersions[0];
-        for (const tVersion of rolledOutVersions) {
-          if (semver.gt(tVersion.name, version.name)) {
-            version = tVersion;
-          }
-        }
+        for (const version of rolledOutVersions.sort((a, b) => semver.compare(a.name, b.name))) {
+          for (const file of version.files) {
+            if (file.type !== 'installer') continue;
 
-        for (const file of version.files) {
-          if (file.type !== 'installer') continue;
-          const latestKey = this.positioner.getLatestKey(app, channel, version, file);
-          const indexKey = this.positioner.getIndexKey(app, channel, version, file);
+            const latestKey = this.positioner.getLatestKey(app, channel, version, file);
+            const indexKey = this.positioner.getIndexKey(app, channel, version, file);
 
-          itemFetchers.push(async () => ({
-            done: (await this.mStore.getFile(`${latestKey}.ref`)).toString() === version.name,
-            data: {
-              latestKey,
+            latestThings[latestKey] = {
               indexKey,
               version: version.name,
-            },
-          }));
+            };
+          }
         }
       }
+    }
+
+    for (const latestKey in latestThings) {
+      const latestThing = latestThings[latestKey];
+
+      itemFetchers.push(async () => ({
+        done: (await this.mStore.getFile(`${latestKey}.ref`)).toString() === latestThing.version,
+        data: {
+          latestKey,
+          indexKey: latestThing.indexKey,
+          version: latestThing.version,
+        },
+      }));
     }
 
     const items: MigrationItem<LatestInstallerMigrationItem>[] = [];
