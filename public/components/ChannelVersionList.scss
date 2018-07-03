@@ -14,10 +14,19 @@
   background: transparent;
   color: black;
   display: inline-block;
+  position: relative;
 
   &:hover {
     background: #0F4AA3;
     color: white;
+  }
+
+  .versionRolloutSuper {
+    font-size: 8px;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-style: italic;
   }
 }
 
@@ -73,5 +82,25 @@
         margin-right: 12px;
       }
     }
+  }
+}
+
+.versionModalSpinner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.versionModalSpinning {
+    opacity: 1;
+    pointer-events: all;
   }
 }

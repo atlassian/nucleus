@@ -1,13 +1,15 @@
+sudo: true
 language: node_js
 node_js:
-  - "6"
+  - "8"
 cache: yarn
 env:
   global:
     COMMIT=${TRAVIS_COMMIT::8}
 
+before_install: sudo apt-get install -y createrepo dpkg-dev apt-utils gnupg2 gzip
 before_script: cp config.template.js config.js
-script: yarn lint && yarn test
+script: yarn lint && yarn build-server && yarn test
 
 after_success:
   - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD

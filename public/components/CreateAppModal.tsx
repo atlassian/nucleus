@@ -15,7 +15,9 @@ import * as styles from './CreateAppModal.scss';
 const AkFieldText = AkFieldTextExported as any;
 /* tslint:enable */
 
-interface CreateAppModalReduxProps {}
+interface CreateAppModalReduxProps {
+  hasPendingMigration: boolean;
+}
 interface CreateAppModalReduxDispatchProps {
   setApps: (apps: NucleusApp[]) => any;
 }
@@ -104,7 +106,7 @@ class CreateAppModal extends React.PureComponent<CreateAppModalComponentProps & 
         footer={<div style={{ textAlign: 'right' }}>
           <AkButton onClick={this.close} isDisabled={this.state.creating}>Cancel</AkButton>
           <div style={{ marginRight: 8, display: 'inline-block' }} />
-          <AkButton appearance="primary" onClick={this.create} isDisabled={this.state.creating}>Create</AkButton>
+          <AkButton appearance="primary" onClick={this.create} isDisabled={this.state.creating || this.props.hasPendingMigration}>Create</AkButton>
         </div>}
         isOpen={this.props.isOpen}
         onDialogDismissed={this.close}
@@ -140,7 +142,9 @@ class CreateAppModal extends React.PureComponent<CreateAppModalComponentProps & 
   }
 }
 
-const mapStateToProps = null;
+const mapStateToProps = (state: AppState) => ({
+  hasPendingMigration: state.migrations.hasPendingMigration,
+});
 
 const mapDispatchToProps = (dispatch: Dispatch<void>) => ({
   setApps: (apps: NucleusApp[]) => dispatch(setApps(apps)),

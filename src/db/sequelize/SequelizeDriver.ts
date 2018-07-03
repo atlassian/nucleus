@@ -1,7 +1,9 @@
 import { Sequelize } from 'sequelize-typescript';
 
 import BaseDriver from '../BaseDriver';
-import getSequelize, { App, TeamMember, Channel, Version, File, TemporarySave, TemporarySaveFile, WebHook, WebHookError } from './models';
+import getSequelize, { App, TeamMember, Channel, Version, File, TemporarySave, TemporarySaveFile, WebHook, WebHookError, Migration } from './models';
+import BaseMigration from '../../migrations/BaseMigration';
+import * as config from '../../config';
 
 const hat = require('hat');
 
@@ -120,14 +122,21 @@ export default class SequelizeDriver extends BaseDriver {
       name: version.name,
       dead: version.dead,
       rollout: version.rollout,
-      files: (version.files || []).map(f => f.get() as File).map(file => ({
-        fileName: file.fileName,
-        arch: file.arch,
-        platform: file.platform as NucleusPlatform,
-        type: file.type as FileType,
-      })),
+      files: (version.files || []).map(f => f.get() as File).map(this.fixFileStruct),
     })));
     return newChannel;
+  }
+
+  private fixFileStruct(file: File): NucleusFile {
+    return {
+      id: file.id,
+      fileName: file.fileName,
+      arch: file.arch,
+      platform: file.platform as NucleusPlatform,
+      type: file.type as FileType,
+      sha1: file.sha1,
+      sha256: file.sha256,
+    };
   }
 
   public async getApps() {
@@ -171,6 +180,10 @@ export default class SequelizeDriver extends BaseDriver {
   public async getChannel(app: NucleusApp, channelId: ChannelID) {
     await this.ensureConnected();
     const channel = await Channel.findOne({
+      include: [{
+        model: Version,
+        include: [File],
+      }],
       where: {
         appId: parseInt(app.id!, 10),
         stringId: channelId,
@@ -183,10 +196,10 @@ export default class SequelizeDriver extends BaseDriver {
   private typeFromPlatformAndName(platform: NucleusPlatform, fileName: string): FileType {
     switch (platform) {
       case 'win32':
-        if (fileName.endsWith('.exe')) return 'installer';
+        if (fileName.endsWith('.exe') || fileName.endsWith('.msi')) return 'installer';
         break;
       case 'darwin':
-        if (fileName.endsWith('.dmg')) return 'installer';
+        if (fileName.endsWith('.dmg') || fileName.endsWith('.pkg')) return 'installer';
       case 'linux':
         if (fileName.endsWith('.rpm') || fileName.endsWith('.deb')) return 'installer';
     }
@@ -277,13 +290,17 @@ export default class SequelizeDriver extends BaseDriver {
       include: [File],
     });
     if (!dbVersion) {
+      const channelHasVersion = !!(Version.findOne<Version>({
+        where: { channelId: rawSave.channelId },
+      }));
       dbVersion = new Version({
         name: save.version,
         dead: false,
-        rollout: 0,
+        rollout: channelHasVersion ? config.defaultRollout : 100,
         channelId: rawChannel.id,
       });
       await dbVersion.save();
+      dbVersion.files = [];
     }
 
     const storedFileNames: string[] = [];
@@ -298,6 +315,7 @@ export default class SequelizeDriver extends BaseDriver {
           versionId: dbVersion.id,
         });
         await newFile.save();
+        dbVersion.files.push(newFile);
       }
     }
     const app = (await App.findOne<App>({
@@ -389,7 +407,10 @@ export default class SequelizeDriver extends BaseDriver {
         appId: parseInt(app.id!, 10),
         stringId: channel.id,
       },
-      include: [Version],
+      include: [{
+        model: Version,
+        include: [File],
+      }],
     });
     if (!rawChannel || !rawChannel.versions || rollout < 0 || rollout > 100) return (await this.getChannel(app, channel.id!))!;
     for (const version of rawChannel.versions) {
@@ -401,5 +422,35 @@ export default class SequelizeDriver extends BaseDriver {
     }
     await this.writeVersionsFileToStore(app, channel);
     return this.fixChannelStruct(rawChannel.get());
+  }
+
+  public async addMigrationIfNotExists(migration: BaseMigration<any>) {
+    const existing = await Migration.findOne<Migration>({
+      where: {
+        key: migration.key,
+      },
+    });
+    if (existing) return existing;
+    return await Migration.create<Migration>({
+      key: migration.key,
+      friendlyName: migration.friendlyName,
+      complete: (await App.count()) === 0,
+    });
+  }
+
+  public async getMigrations() {
+    return await Migration.findAll<Migration>();
+  }
+
+  public async storeSHAs(file: NucleusFile, hashes: HashSet) {
+    const rawFile = await File.findById<File>(file.id);
+    if (!rawFile) return null;
+
+    rawFile.sha1 = hashes.sha1;
+    rawFile.sha256 = hashes.sha256;
+
+    await rawFile.save();
+
+    return this.fixFileStruct(rawFile);
   }
 }

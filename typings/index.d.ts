@@ -71,6 +71,7 @@ interface IConfig {
   sessionConfig: SessionConfig;
   organization?: string;
   gpgSigningKey: string;
+  defaultRollout: number;
 }
 
 interface User {
@@ -122,16 +123,27 @@ interface NucleusChannel {
   versions: NucleusVersion[];
 }
 
+interface NucleusFile {
+  id?: any;
+  fileName: string;
+  arch: string;
+  platform: NucleusPlatform;
+  type: FileType;
+  sha1: string;
+  sha256: string;
+}
+
 interface NucleusVersion {
   name: string;
   dead: boolean;
   rollout: number;
-  files: {
-    fileName: string;
-    arch: string;
-    platform: NucleusPlatform;
-    type: FileType;
-  }[];
+  files: NucleusFile[];
+}
+
+interface NucleusMigration {
+  key: string;
+  friendlyName: string;
+  complete: boolean;
 }
 
 interface ITemporarySave {
@@ -145,12 +157,27 @@ interface ITemporarySave {
   cipherPassword: string;
 }
 
+interface HandlePlatformUploadOpts {
+  app: NucleusApp;
+  channel: NucleusChannel;
+  internalVersion: NucleusVersion;
+  file: NucleusFile;
+  fileData: Buffer;
+}
+
 interface IFileStore {
   putFile(key: string, data: Buffer, overwriteExisting?: boolean): Promise<boolean>;
+  hasFile(key: string): Promise<boolean>;
   getFile(key: string): Promise<Buffer>;
+  getFileSize(key: string): Promise<number>;
   getPublicBaseUrl(): Promise<string>;
   deletePath(key: string): Promise<void>;
   listFiles(prefix: string): Promise<string[]>;
+}
+
+interface HashSet {
+  sha1: string;
+  sha256: string;
 }
 
 declare namespace Express {
@@ -165,6 +192,10 @@ declare namespace Express {
     body: any;
     targetApp: NucleusApp;
     channel: NucleusChannel;
+    migration: {
+      internal: NucleusMigration;
+      migrator: any;
+    };
   }
 }
 

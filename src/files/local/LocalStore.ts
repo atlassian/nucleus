@@ -20,10 +20,24 @@ export default class LocalStore implements IFileStore {
   }
 
   public async getFile(key: string) {
-    if (await fs.pathExists(this.getPath(key))) {
+    if (await this.hasFile(key)) {
       return await fs.readFile(this.getPath(key));
     }
     return Buffer.from('');
+  }
+
+  public async getFileSize(key: string) {
+    if (await this.hasFile(key)) {
+      return (await fs.stat(this.getPath(key))).size;
+    }
+    return 0;
+  }
+
+  public async hasFile(key: string) {
+    if (await fs.pathExists(this.getPath(key))) {
+      return (await fs.stat(this.getPath(key))).isFile();
+    }
+    return false;
   }
 
   public async deletePath(key: string) {

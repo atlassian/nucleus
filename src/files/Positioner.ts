@@ -5,32 +5,18 @@ import * as semver from 'semver';
 
 import { initializeAptRepo, addFileToAptRepo } from './utils/apt';
 import { initializeYumRepo, addFileToYumRepo } from './utils/yum';
+import { updateDarwinReleasesFiles } from './utils/darwin';
+import { updateWin32ReleasesFiles } from './utils/win32';
 
 const hat = require('hat');
 
-const VALID_WINDOWS_SUFFIX = ['-full.nupkg', '-delta.nupkg', '.exe'];
-const VALID_DARWIN_SUFFIX = ['.dmg', '.zip'];
+const VALID_WINDOWS_SUFFIX = ['-full.nupkg', '-delta.nupkg', '.exe', '.msi'];
+const VALID_DARWIN_SUFFIX = ['.dmg', '.zip', '.pkg'];
 const CIPHER_MODE = 'aes-256-ctr';
 
 const d = debug('nucleus:positioner');
 
 type PositionerLock = string;
-
-interface MacOSRelease {
-  version: string;
-  updateTo: {
-    version: string;
-    pub_date: string;
-    notes: string;
-    name: string;
-    url: string;
-  };
-}
-
-interface MacOSReleasesStruct {
-  currentRelease: string;
-  releases: MacOSRelease[];
-}
 
 export default class Positioner {
   private store: IFileStore;
@@ -67,81 +53,186 @@ export default class Positioner {
     await this.store.deletePath(path.join(app.slug, 'temp', saveString));
   }
 
-  public async handleUpload(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, version: string, arch: string, platform: string, fileName: string, data: Buffer) {
+  /**
+   * Handle the upload / release of a given file for a given version.  This will do a few things
+   *
+   * * Position the file at the correct place for the given OS and update the required metadata
+   * * Add the file to the _index for the given app/channel/version
+   * * Copy the file to the "latest" position if it is semantically the latest release at 100% rollout
+   */
+  public async handleUpload(lock: PositionerLock, {
+    app,
+    channel,
+    internalVersion,
+    file,
+    fileData,
+  }: {
+    app: NucleusApp;
+    channel: NucleusChannel;
+    internalVersion: NucleusVersion,
+    file: NucleusFile;
+    fileData: Buffer;
+  }) {
     // Validate arch
     if (lock !== await this.currentLock(app)) return;
-    if (arch !== 'ia32' && arch !== 'x64') return;
-    d(`Handling upload (${fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${version}) on platform/arch (${platform}/${arch})`);
+    if (file.arch !== 'ia32' && file.arch !== 'x64') return;
+    d(`Handling upload (${file.fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${internalVersion.name}) on platform/arch (${file.platform}/${file.arch})`);
 
-    switch (platform) {
+    switch (file.platform) {
       case 'win32':
-        return await this.handleWindowsUpload(app, channel, version, arch, fileName, data);
+        await this.handleWindowsUpload({ app, channel, internalVersion, file, fileData });
+        break;
       case 'darwin':
-        return await this.handleDarwinUpload(app, channel, version, arch, fileName, data);
+        await this.handleDarwinUpload({ app, channel, internalVersion, file, fileData });
+        break;
       case 'linux':
-        return await this.handleLinuxUpload(app, channel, version, arch, fileName, data);
+        await this.handleLinuxUpload({ app, channel, internalVersion, file, fileData });
+        break;
+      default:
+        return;
+    }
+
+    if (!process.env.NO_NUCLEUS_INDEX) {
+      // Insert into file index for retreival later, this is purely to avoid making assumptions
+      // about file lifetimes for all platforms or assumptions about file positions or assumptions
+      // about file names containing version strings (which are currently enforced but may not be
+      // in the future)
+      await this.store.putFile(this.getIndexKey(app, channel, internalVersion, file), fileData);
+    }
+
+    if (internalVersion.rollout === 100 && !internalVersion.dead && this.isLatestRelease(internalVersion, channel)) {
+      await this.copyFileToLatest(app, channel, internalVersion, file);
     }
   }
 
-  protected async handleWindowsUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
-    const root = path.posix.join(app.slug, channel.id, 'win32', arch);
-    const key = path.posix.join(root, fileName);
-    if (!VALID_WINDOWS_SUFFIX.some(suffix => fileName.endsWith(suffix))) {
-      d(`Attempted to upload a file for win32 but it had an invalid suffix: ${fileName}`);
+  public getIndexKey(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
+    return path.posix.join(app.slug, channel.id, '_index', version.name, file.platform, file.arch, file.fileName);
+  }
+
+  public getLatestKey(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
+    const ext = path.extname(file.fileName);
+    return path.posix.join(app.slug, channel.id, 'latest', file.platform, file.arch, `${app.name}${ext}`);
+  }
+
+  /**
+   * Given a version for an app / channel check if any of the files should be uploaded to the "latest"
+   * positioning.  This will only occur if the rollout is 100 and the version is the "latest" according
+   * to semver.
+   */
+  public async potentiallyUpdateLatestInstallers(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, internalVersion: NucleusVersion) {
+    if (lock !== await this.currentLock(app)) return;
+    if (internalVersion.rollout !== 100) return;
+    if (internalVersion.dead) return;
+    if (!this.isLatestRelease(internalVersion, channel)) return;
+
+    for (const file of internalVersion.files) {
+      await this.copyFileToLatest(app, channel, internalVersion, file);
+    }
+  }
+
+  /**
+   * It is assumed the called has a validated lock
+   */
+  private async copyFileToLatest(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
+    if (file.type === 'installer') {
+      const latestKey = this.getLatestKey(app, channel, version, file);
+      const latestRef = (await this.store.getFile(`${latestKey}.ref`)).toString();
+
+      if (latestRef !== version.name) {
+        await this.store.putFile(
+          latestKey,
+          await this.store.getFile(this.getIndexKey(app, channel, version, file)),
+          true,
+        );
+        await this.store.putFile(
+          `${latestKey}.ref`,
+          Buffer.from(version.name),
+          true,
+        );
+      }
+    }
+  }
+
+  private isLatestRelease(version: NucleusVersion, channel: NucleusChannel) {
+    const greaterVersion = channel.versions
+      .filter(v => v.rollout === 100 && !v.dead)
+      .find(v => semver.gt(v.name, version.name));
+    return !greaterVersion;
+  }
+
+  public updateWin32ReleasesFiles = async (lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, arch: string) => {
+    if (lock !== await this.currentLock(app)) return;
+    return await updateWin32ReleasesFiles({
+      app,
+      channel,
+      arch,
+      store: this.store,
+      positioner: this,
+    });
+  }
+
+  protected async handleWindowsUpload({
+    app,
+    channel,
+    file,
+    fileData,
+  }: HandlePlatformUploadOpts) {
+    const root = path.posix.join(app.slug, channel.id, 'win32', file.arch);
+    const key = path.posix.join(root, file.fileName);
+    if (!VALID_WINDOWS_SUFFIX.some(suffix => file.fileName.endsWith(suffix))) {
+      d(`Attempted to upload a file for win32 but it had an invalid suffix: ${file.fileName}`);
       return;
     }
 
-    if (await this.store.putFile(key, data) && fileName.endsWith('.nupkg')) {
+    if (await this.store.putFile(key, fileData) && file.fileName.endsWith('.nupkg')) {
       d('Pushed a nupkg file to the file store so appending release information to RELEASES');
-      const releasesKey = path.posix.join(root, 'RELEASES');
-      let RELEASES = (await this.store.getFile(releasesKey)).toString('utf8');
-      const hash = crypto.createHash('SHA1').update(data).digest('hex').toUpperCase();
-      RELEASES += `${RELEASES.length > 0 ? '\n' : ''}${hash} ${fileName} ${data.byteLength}`;
-      await this.store.putFile(releasesKey, Buffer.from(RELEASES, 'utf8'), true);
+      await updateWin32ReleasesFiles({ app, channel, arch: file.arch, store: this.store, positioner: this });
     }
   }
 
-  protected async handleDarwinUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
-    const root = path.posix.join(app.slug, channel.id, 'darwin', arch);
-    const key = path.posix.join(root, fileName);
-    if (!VALID_DARWIN_SUFFIX.some(suffix => fileName.endsWith(suffix))) {
-      d(`Attempted to upload a file for darwin but it had an invalid suffix: ${fileName}`);
+  public updateDarwinReleasesFiles = async (lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, arch: string) => {
+    if (lock !== await this.currentLock(app)) return;
+    return await updateDarwinReleasesFiles({
+      app,
+      channel,
+      arch,
+      store: this.store,
+    });
+  }
+
+  protected async handleDarwinUpload({
+    app,
+    channel,
+    internalVersion,
+    file,
+    fileData,
+  }: HandlePlatformUploadOpts) {
+    const root = path.posix.join(app.slug, channel.id, 'darwin', file.arch);
+    const fileKey = path.posix.join(root, file.fileName);
+    if (!VALID_DARWIN_SUFFIX.some(suffix => file.fileName.endsWith(suffix))) {
+      d(`Attempted to upload a file for darwin but it had an invalid suffix: ${file.fileName}`);
       return;
     }
 
-    if (await this.store.putFile(key, data) && fileName.endsWith('.zip')) {
-      d('Pushed a zip file to the file store so appending release information to RELEASES.json');
-      const releasesKey = path.posix.join(root, 'RELEASES.json');
-      const releasesJson: MacOSReleasesStruct = JSON.parse((await this.store.getFile(releasesKey)).toString('utf8') || '{"releases":[]}');
-      if (!releasesJson.currentRelease || semver.gt(version, releasesJson.currentRelease)) {
-        d(`The version '${version}' is considered greater than ${releasesJson.currentRelease} so we're updating currentRelease`);
-        releasesJson.currentRelease = version;
-      }
-      const existingRelease = releasesJson.releases.find(release => release.version === version);
-      if (!existingRelease) {
-        d(`Release wasn't in RELEASES.json already so we're adding it`);
-        releasesJson.releases.push({
-          version,
-          updateTo: {
-            version,
-            pub_date: (new Date()).toString(),
-            notes: '',
-            name: version,
-            url: encodeURI(`${await this.store.getPublicBaseUrl()}/${key}`),
-          },
-        });
-        await this.store.putFile(releasesKey, Buffer.from(JSON.stringify(releasesJson, null, 2), 'utf8'), true);
-      }
+    if (await this.store.putFile(fileKey, fileData) && file.fileName.endsWith('.zip')) {
+      d('Pushed a zip file to the file store so updating release information in RELEASES.json');
+      await updateDarwinReleasesFiles({ app, channel, arch: file.arch, store: this.store });
     }
   }
 
-  protected async handleLinuxUpload(app: NucleusApp, channel: NucleusChannel, version: string, arch: string, fileName: string, data: Buffer) {
-    if (fileName.endsWith('.rpm')) {
+  protected async handleLinuxUpload({
+    app,
+    channel,
+    internalVersion,
+    file,
+    fileData,
+  }: HandlePlatformUploadOpts) {
+    if (file.fileName.endsWith('.rpm')) {
       d('Adding rpm file to yum repo');
-      await addFileToYumRepo(this.store, app, channel, fileName, data, version);
-    } else if (fileName.endsWith('.deb')) {
+      await addFileToYumRepo(this.store, { app, channel, file, fileData, internalVersion });
+    } else if (file.fileName.endsWith('.deb')) {
       d('Adding deb file to apt repo');
-      await addFileToAptRepo(this.store, app, channel, fileName, data, version);
+      await addFileToAptRepo(this.store, { app, channel, file, fileData, internalVersion });
     } else {
       console.warn('Will not upload unknown linux file');
     }
@@ -155,7 +246,7 @@ export default class Positioner {
     return (await this.store.getFile(lockFile)).toString('utf8');
   }
 
-  public getLock = async (app: NucleusApp): Promise<PositionerLock | null> => {
+  public requestLock = async (app: NucleusApp): Promise<PositionerLock | null> => {
     const lockFile = path.posix.join(app.slug, '.lock');
     const lock = hat();
     const currentLock = (await this.store.getFile(lockFile)).toString('utf8');
@@ -175,7 +266,7 @@ export default class Positioner {
   }
 
   public withLock = async (app: NucleusApp, fn: (lock: PositionerLock) => Promise<void>): Promise<boolean> => {
-    const lock = await this.getLock(app);
+    const lock = await this.requestLock(app);
     if (!lock) return false;
     try {
       await fn(lock);

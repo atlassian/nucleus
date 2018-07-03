@@ -100,7 +100,13 @@ export const initializeYumRepo = async (store: IFileStore, app: NucleusApp, chan
   });
 };
 
-export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, channel: NucleusChannel, fileName: string, data: Buffer, version: string) => {
+export const addFileToYumRepo = async (store: IFileStore, {
+  app,
+  channel,
+  internalVersion,
+  file,
+  fileData,
+}: HandlePlatformUploadOpts) => {
   await withTmpDir(async (tmpDir) => {
     const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'redhat');
     await syncStoreToDirectory(
@@ -108,11 +114,11 @@ export const addFileToYumRepo = async (store: IFileStore, app: NucleusApp, chann
       storeKey,
       tmpDir,
     );
-    const binaryPath = path.resolve(tmpDir, `${version}-${fileName}`);
+    const binaryPath = path.resolve(tmpDir, `${internalVersion.name}-${file.fileName}`);
     if (await fs.pathExists(binaryPath)) {
       throw new Error('Uploaded a duplicate file');
     }
-    await fs.writeFile(binaryPath, data);
+    await fs.writeFile(binaryPath, fileData);
     await signAllRpmFiles(tmpDir);
     const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']);
     await cp.spawn(exe, args, {

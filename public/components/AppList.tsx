@@ -1,8 +1,6 @@
 import * as React from 'react';
 import { connect, Dispatch } from 'react-redux';
-import { Link } from 'react-router';
 
-import AkSpinner from '@atlaskit/spinner';
 import AppCard from './AppCard';
 import PageLoader from './PageLoader';
 

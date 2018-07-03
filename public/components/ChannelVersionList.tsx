@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as semver from 'semver';
 
 import AkBanner from '@atlaskit/banner';
 import AkButton from '@atlaskit/button';
@@ -15,6 +16,7 @@ export interface ChannelVersionListProps {
   channel: NucleusChannel;
   baseUpdateUrl: string;
   updateApps: (showLoading: boolean) => Promise<void>;
+  hasPendingMigration: boolean;
 }
 
 interface PossiblePreReleaseVersion {
@@ -28,9 +30,8 @@ interface ChannelVersionListState {
   loading: boolean;
   temporaryVersions: ITemporarySave[];
   modalVersion: PossiblePreReleaseVersion | null;
+  actionRunning: boolean;
   modalOpen: boolean;
-  releasing: boolean;
-  killing: boolean;
 }
 
 export default class ChannelVersionList extends React.PureComponent<ChannelVersionListProps, ChannelVersionListState> {
@@ -39,8 +40,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     temporaryVersions: [],
     modalVersion: null as (PossiblePreReleaseVersion | null),
     modalOpen: false,
-    releasing: false,
-    killing: false,
+    actionRunning: false,
   };
 
   componentDidMount() {
@@ -100,6 +100,8 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
         arch: draftVersion.arch,
         platform: draftVersion.platform,
         type: 'unknown' as FileType,
+        sha1: '',
+        sha256: '',
       })),
     };
     return ret;
@@ -110,7 +112,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
   }
 
   closeModal = () => {
-    if (this.state.releasing) return;
+    if (this.state.actionRunning) return;
     this.setState({
       modalOpen: false,
     });
@@ -129,6 +131,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
               this.props.channel.versions.map((version, index) => (
                 <div key={index} className={styles.versionSelect} onClick={this.showVersionModal(version)} style={{ color: version.dead ? 'red' : 'inherit', textDecoration: version.dead ? 'line-through' : '' }}>
                   {version.name}
+                  <span className={styles.versionRolloutSuper}>{version.rollout}%</span>
                 </div>
               ))
             )
@@ -163,14 +166,8 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
   private download = file => () => {
     const version = this.state.modalVersion.version.name;
 
-    let downloadURL = `${this.props.baseUpdateUrl}/${this.props.app.slug}/${this.props.channel.id}/${file.platform}/${file.arch}/${file.fileName}`;
-    if (file.platform === 'linux') {
-      if (/\.deb$/.test(file.fileName)) {
-        downloadURL = `${this.props.baseUpdateUrl}/${this.props.app.slug}/${this.props.channel.id}/${file.platform}/debian/binary/${version}-${file.fileName}`;
-      } else if (/\.rpm$/.test(file.fileName)) {
-        downloadURL = `${this.props.baseUpdateUrl}/${this.props.app.slug}/${this.props.channel.id}/${file.platform}/redhat/${version}-${file.fileName}`;
-      }
-    }
+    let downloadURL = `${this.props.baseUpdateUrl}/${this.props.app.slug}/${this.props.channel.id}/_index/${version}/${file.platform}/${file.arch}/${file.fileName}`;
+
     if (this.state.modalVersion && this.state.modalVersion.isPreRelease) {
       downloadURL = `/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/temporary_releases/${this.state.modalVersion.preReleaseId}/${file.fileName}`;
     }
@@ -184,7 +181,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     if (this.state.modalVersion && this.state.modalVersion.isPreRelease) {
       if (!confirm('Are you sure you want to release this pre-release?')) return;
       this.setState({
-        releasing: true,
+        actionRunning: true,
       });
       const response = await fetch(`/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/temporary_releases/${this.state.modalVersion.preReleaseId}/release`, {
         credentials: 'include',
@@ -193,14 +190,14 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       if (response.status === 409) {
         alert('A release is already in progress, please wait a while and try again');
         this.setState({
-          releasing: false,
+          actionRunning: false,
         });
         return;
       }
       await this.fetch();
       await this.props.updateApps(false);
       this.setState({
-        releasing: false,
+        actionRunning: false,
         modalOpen: false,
       });
     }
@@ -210,7 +207,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     if (this.state.modalVersion && this.state.modalVersion.isPreRelease) {
       if (!confirm('Are you sure you want to delete this pre-release?')) return;
       this.setState({
-        releasing: true,
+        actionRunning: true,
       });
       const response = await fetch(`/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/temporary_releases/${this.state.modalVersion.preReleaseId}/delete`, {
         credentials: 'include',
@@ -218,7 +215,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       });
       await this.fetch();
       this.setState({
-        releasing: false,
+        actionRunning: false,
         modalOpen: false,
       });
     }
@@ -228,7 +225,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     if (this.state.modalVersion && !this.state.modalVersion.isPreRelease) {
       if (!confirm(`Are you sure you want to ${this.state.modalVersion.version.dead ? 'bring this version back to life?' : 'mark this version as dead?'}`)) return;
       this.setState({
-        killing: true,
+        actionRunning: true,
       });
       const headers = new Headers();
       headers.append('Content-Type', 'application/json');
@@ -243,20 +240,23 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       });
       await this.props.updateApps(false);
       this.setState({
-        killing: false,
+        actionRunning: false,
       });
     }
   }
 
   private modifyRollout = async () => {
     if (this.state.modalVersion && !this.state.modalVersion.isPreRelease) {
+      this.setState({
+        actionRunning: true,
+      });
       const rawValue = prompt('Please enter a new rollout percentage (between 0 and 100)');
       if (typeof rawValue !== 'string') return;
       const newRollout = parseInt(rawValue, 10);
       if (isNaN(newRollout) || newRollout < 0 || newRollout > 100) return alert('Invalid rollout percentage entered, expected a number between 0 and 100');
       const headers = new Headers();
       headers.append('Content-Type', 'application/json');
-      const response = await fetch(`/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/rollout`, {
+      await fetch(`/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/rollout`, {
         headers,
         credentials: 'include',
         method: 'POST',
@@ -266,6 +266,9 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
         }),
       });
       await this.props.updateApps(false);
+      this.setState({
+        actionRunning: false,
+      });
     }
   }
 
@@ -277,7 +280,15 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
       appearance = 'help';
       text = 'Revive';
     }
-    return <AkButton appearance={appearance as any} onClick={this.toggleVersionDeath} isDisabled={this.state.killing}>{text}</AkButton>;
+    return (
+      <AkButton
+        appearance={appearance as any}
+        onClick={this.toggleVersionDeath}
+        isDisabled={this.state.actionRunning || this.props.hasPendingMigration}
+      >
+        {text}
+      </AkButton>
+    );
   }
 
   render() {
@@ -290,7 +301,9 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
         foundIndex = index;
       }
     });
-    const notLastVersion = foundIndex < this.props.channel.versions.length - 1;
+    const hasFullRolloutAfter = this.state.modalVersion ? !!this.props.channel.versions.find((version) => {
+      return !version.dead && version.rollout === 100 && semver.gt(version.name, this.state.modalVersion.version.name);
+    }) : false;
     return (
       <div style={{ width: '100%' }}>
         <AkTabs
@@ -302,17 +315,20 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
             <AkModalDialog
               header={<h4 style={{ marginBottom: 0 }}>Version: {this.state.modalVersion.version.name}</h4>}
               footer={<div style={{ textAlign: 'right' }}>
-                { !this.state.modalVersion.isPreRelease && notLastVersion ? this.killButton : null }
-                { !this.state.modalVersion.isPreRelease && notLastVersion ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
-                <AkButton appearance="primary" onClick={this.closeModal} isDisabled={this.state.releasing}>Done</AkButton>
+                { !this.state.modalVersion.isPreRelease && hasFullRolloutAfter ? this.killButton : null }
+                { !this.state.modalVersion.isPreRelease && hasFullRolloutAfter ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
+                <AkButton appearance="primary" onClick={this.closeModal} isDisabled={this.state.actionRunning}>Done</AkButton>
                 { this.state.modalVersion.isPreRelease ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
-                { this.state.modalVersion.isPreRelease ? <AkButton appearance="primary" onClick={this.release} isDisabled={this.state.releasing}>Release</AkButton> : null }
+                { this.state.modalVersion.isPreRelease ? <AkButton appearance="primary" onClick={this.release} isDisabled={this.state.actionRunning || this.props.hasPendingMigration}>Release</AkButton> : null }
                 { this.state.modalVersion.isPreRelease ? <div style={{ marginRight: 8, display: 'inline-block' }} /> : null }
-                { this.state.modalVersion.isPreRelease ? <AkButton appearance="danger" onClick={this.delete} isDisabled={this.state.releasing}>Delete</AkButton> : null }
+                { this.state.modalVersion.isPreRelease ? <AkButton appearance="danger" onClick={this.delete} isDisabled={this.state.actionRunning || this.props.hasPendingMigration}>Delete</AkButton> : null }
               </div>}
               isOpen={this.state.modalOpen}
               onDialogDismissed={this.closeModal}
             >
+              <div className={`${styles.versionModalSpinner} ${this.state.actionRunning ? styles.versionModalSpinning : ''}`}>
+                <AkSpinner size={40} />
+              </div>
               {
                 this.state.modalVersion.isPreRelease
                 ? (
@@ -343,7 +359,18 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
                 : (
                   <div style={{ marginTop: 4 }}>
                     <b>Current Rollout: </b>{this.state.modalVersion.version.rollout}%
-                    <a href="javascript: void" style={{ marginLeft: 8 }} onClick={this.modifyRollout}>Edit</a>
+                    {
+                      this.state.modalVersion.version.rollout !== 100 && !this.state.modalVersion.version.dead
+                      ? (
+                        <a
+                          href="javascript: void"
+                          style={{ marginLeft: 8, cursor: this.props.hasPendingMigration ? 'not-allowed' : 'pointer' }}
+                          onClick={this.props.hasPendingMigration ? () => {} : this.modifyRollout}
+                        >
+                          Edit
+                        </a>
+                      ) : null
+                    }
                   </div>
                 )
               }
@@ -372,7 +399,3 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     );
   }
 }
-
-const mapStateToProps = state => ({
-  baseUpdateUrl: state.base,
-});

@@ -23,6 +23,15 @@ class UserDropDown extends React.PureComponent<RouteComponentProps<void, void> &
     });
   }
 
+  private goToMigrations = () => {
+    if (this.props.location.pathname !== '/migrations') {
+      this.props.history.push('/migrations');
+    }
+    this.setState({
+      open: false,
+    });
+  }
+
   private openChange = (attrs) => {
     this.setState({
       open: attrs.isOpen,
@@ -47,6 +56,12 @@ class UserDropDown extends React.PureComponent<RouteComponentProps<void, void> &
       >
         <Group heading={this.props.user.displayName}>
           <Item onActivate={this.goToApps}>My Applications</Item>
+          {
+            this.props.user.isAdmin
+            ? (
+              <Item onActivate={this.goToMigrations}>Migrations</Item>
+            ) : null
+          }
           <Item href="/rest/auth/logout">Logout</Item>
         </Group>
       </DropdownList>

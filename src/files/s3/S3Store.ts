@@ -1,9 +1,8 @@
 import * as AWS from 'aws-sdk';
 import * as debug from 'debug';
 
+import { CloudFrontBatchInvalidator } from './CloudFrontBatchInvalidator';
 import * as config from '../../config';
-
-const hat = require('hat');
 
 const d = debug('nucleus:s3');
 
@@ -13,18 +12,34 @@ AWS.config.credentials = new AWS.EC2MetadataCredentials({
 });
 
 export default class S3Store implements IFileStore {
-  constructor(private s3Config = config.s3) {}
+  constructor(public s3Config = config.s3) {}
 
-  public async putFile(key: string, data: Buffer, overwrite = false) {
-    d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
+  public async hasFile(key: string) {
     const s3 = new AWS.S3();
-    const keyExists = async () => await new Promise<boolean>(resolve => s3.headObject({
+    return await new Promise<boolean>(resolve => s3.headObject({
       Bucket: this.s3Config.bucketName,
       Key: key,
     }, (err) => {
       if (err && err.code === 'NotFound') return resolve(false);
       resolve(true);
     }));
+  }
+
+  public async getFileSize(key: string) {
+    const s3 = new AWS.S3();
+    return await new Promise<number>(resolve => s3.headObject({
+      Bucket: this.s3Config.bucketName,
+      Key: key,
+    }, (err, info) => {
+      if (err && err.code === 'NotFound') return resolve(0);
+      resolve(info.ContentLength || 0);
+    }));
+  }
+
+  public async putFile(key: string, data: Buffer, overwrite = false) {
+    d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
+    const s3 = new AWS.S3();
+    const keyExists = async () => await this.hasFile(key);
     let wrote = false;
     if (overwrite || !await keyExists()) {
       d(`Deciding to write file (either because overwrite is enabled or the key didn't exist)`);
@@ -39,21 +54,8 @@ export default class S3Store implements IFileStore {
       }));
       wrote = true;
     }
-    if (overwrite && this.s3Config.cloudfront) {
-      d(`Cloudfront config detected, sending invalidation request for: '${key}'`);
-      const cloudFront = new AWS.CloudFront();
-      cloudFront.createInvalidation({
-        DistributionId: this.s3Config.cloudfront.distributionId,
-        InvalidationBatch: {
-          CallerReference: hat(),
-          Paths: {
-            Quantity: 1,
-            Items: [`/${key}`],
-          },
-        },
-      }, (err, invalidateInfo) => {
-        if (err) console.error('Failed to invalidate:', key, ' Error:', err);
-      });
+    if (overwrite) {
+      CloudFrontBatchInvalidator.get(this).addToBatch(key);
     }
     return wrote;
   }

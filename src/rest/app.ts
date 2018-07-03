@@ -8,19 +8,25 @@ import { createA } from '../utils/a';
 import driver from '../db/driver';
 import store from '../files/store';
 import Positioner from '../files/Positioner';
+import { generateSHAs } from '../files/utils/sha';
 import WebHook from './WebHook';
+
+import { requireLogin, noPendingMigrations } from './_helpers';
 
 const d = debug('nucleus:rest');
 const router = express();
 const a = createA(d);
 const upload = multer();
 
-const requireLogin: express.RequestHandler = (req, res, next) => {
-  if (!req.user) {
-    d(`Unauthenticated user attempted to access: ${req.url}`);
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-  next();
+const updateStaticReleaseMetaData = async (app: NucleusApp, channel: NucleusChannel) => {
+  const upToDateChannel = (await driver.getChannel(app, channel.id!))!;
+
+  const positioner = new Positioner(store);
+  await positioner.withLock(app, async (lock) => {
+    await positioner.updateDarwinReleasesFiles(lock, app, upToDateChannel, 'x64');
+    await positioner.updateWin32ReleasesFiles(lock, app, upToDateChannel, 'ia32');
+    await positioner.updateWin32ReleasesFiles(lock, app, upToDateChannel, 'x64');
+  });
 };
 
 const checkField = (req: Express.Request, res: Express.Response, field: string) => {
@@ -75,7 +81,7 @@ const MAGIC_NAMES = [
   'public.key',
 ];
 
-router.post('/', requireLogin, upload.single('icon'), a(async (req, res) => {
+router.post('/', requireLogin, noPendingMigrations, upload.single('icon'), a(async (req, res) => {
   if (checkField(req, res, 'name')) {
     // It's unlikely but let's not shoot ourselves in the foot
     // In the healthcheck we use __healthcheck as a magic file to
@@ -83,6 +89,10 @@ router.post('/', requireLogin, upload.single('icon'), a(async (req, res) => {
     // We need to disallow that app name from being created
     if (MAGIC_NAMES.includes(req.body.name)) {
       return res.status(400).json({ error: `You can not call your application ${req.body.name}` });
+    }
+
+    if (req.body.name === '') {
+      return res.status(400).json({ error: 'Your app name can not be an empty string' });
     }
 
     if (req.file) {
@@ -127,7 +137,7 @@ router.get('/:id', requireLogin, a(async (req, res) => {
   res.json(req.targetApp);
 }));
 
-router.post('/:id/icon', requireLogin, upload.single('icon'), a(async (req, res) => {
+router.post('/:id/icon', requireLogin, noPendingMigrations, upload.single('icon'), a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   d(`Setting new application icon: ${req.targetApp.slug}`);
   if (req.file) {
@@ -142,9 +152,39 @@ router.post('/:id/icon', requireLogin, upload.single('icon'), a(async (req, res)
   }
 }));
 
-router.post('/:id/webhook', requireLogin, a(async (req, res) => {
+router.post('/:id/refresh_token', requireLogin, noPendingMigrations, a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+  d(`Regenerating the authentication token for app: ${req.targetApp.slug}`);
+  res.json(await driver.resetAppToken(req.targetApp));
+}));
+
+router.post('/:id/team', requireLogin, noPendingMigrations, a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+  if (checkFields(req, res, ['team'])) {
+    let team: string[];
+    try {
+      team = JSON.parse(req.body.team);
+    } catch {
+      return res.status(400).json({ error: 'Provided parameter "team" is not valid JSON' });
+    }
+    if (Array.isArray(team) && team.length > 0 && team.indexOf(req.user.id) !== -1) {
+      d(`Updating team for app: '${req.targetApp.name}' to be: [${team.join(', ')}]`);
+      res.json(await driver.setTeam(req.targetApp, team));
+    } else {
+      d(`Invalid team array for app '${req.targetApp.slug}' was sent to Nucleus`);
+      res.status(400).json({ error: 'Bad team' });
+    }
+  }
+}));
+
+router.post('/:id/webhook', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['url', 'secret'])) {
+    if (typeof req.body.url !== 'string' ||
+        (!req.body.url.startsWith('https://') && !req.body.url.startsWith('http://')) ||
+        req.body.url.startsWith('http://localhost') || req.body.url.startsWith('http://127.0.0.1')) {
+      return res.status(400).json({ error: 'Invalid URL provided' });
+    }
     d(`Creating new WebHook: '${req.body.url}' for app: '${req.targetApp.slug}'`);
     const rawHook = await driver.createWebHook(req.targetApp, req.body.url, req.body.secret);
     const hook = WebHook.fromNucleusHook(req.targetApp, rawHook);
@@ -156,7 +196,7 @@ router.post('/:id/webhook', requireLogin, a(async (req, res) => {
   }
 }));
 
-router.delete('/:id/webhook/:webHookId', requireLogin, a(async (req, res) => {
+router.delete('/:id/webhook/:webHookId', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   d(`Deleting WebHook: '${req.params.webHookId}' for app: '${req.targetApp.slug}'`);
   const rawHook = await driver.getWebHook(req.targetApp, req.params.webHookId);
@@ -169,7 +209,7 @@ router.delete('/:id/webhook/:webHookId', requireLogin, a(async (req, res) => {
   });
 }));
 
-router.post('/:id/channel', requireLogin, a(async (req, res) => {
+router.post('/:id/channel', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['name'])) {
     d(`Creating new channel: '${req.body.name}' for app: '${req.targetApp.slug}'`);
@@ -178,26 +218,6 @@ router.post('/:id/channel', requireLogin, a(async (req, res) => {
     await positioner.initializeStructure(req.targetApp, channel);
     res.json(channel);
     runHooks(req.targetApp, hook => hook.newChannel(channel));
-  }
-}));
-
-router.post('/:id/refresh_token', requireLogin, a(async (req, res) => {
-  if (stopNoPerms(req, res)) return;
-  d(`Regenerating the authentication token for app: ${req.targetApp.slug}`);
-  res.json(await driver.resetAppToken(req.targetApp));
-}));
-
-router.post('/:id/team', requireLogin, a(async (req, res) => {
-  if (stopNoPerms(req, res)) return;
-  if (checkFields(req, res, ['team'])) {
-    const team: string[] = JSON.parse(req.body.team);
-    if (Array.isArray(team) && team.length > 0 && team.indexOf(req.user.id) !== -1) {
-      d(`Updating team for app: '${req.targetApp.name}' to be: [${team.join(', ')}]`);
-      res.json(await driver.setTeam(req.targetApp, team));
-    } else {
-      d(`Invalid team array for app '${req.targetApp.slug}' was sent to Nucleus`);
-      res.status(400).json({ error: 'Bad team' });
-    }
   }
 }));
 
@@ -241,7 +261,7 @@ router.get('/:id/channel/:channelId/temporary_releases/:temporarySaveId/:fileNam
   res.send();
 }));
 
-router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -270,11 +290,33 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
     storedFileNames = await driver.registerVersionFiles(save);
     d(`Tested files: [${save.filenames.join(', ')}] but stored: [${storedFileNames.join(', ')}]`);
 
-    for (const fileName of storedFileNames) {
-      d(`Releasing file: ${fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
+    // Get up to date channel
+    const upToDateChannel = (await driver.getChannel(req.targetApp, req.params.channelId))!;
+    const storedVersion = upToDateChannel.versions.find(v => v.name === save.version)!;
+    const storedFiles = storedVersion.files.filter(f => storedFileNames.includes(f.fileName));
 
-      const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, fileName, save.cipherPassword);
-      await positioner.handleUpload(lock, req.targetApp, channel, save.version, save.arch, save.platform, fileName, data);
+    for (const file of storedFiles) {
+      d(`Releasing file: ${file.fileName} to version: ${save.version} for (${req.targetApp.slug}/${channel.name})`);
+
+      const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, file.fileName, save.cipherPassword);
+      const upToDateFile = await driver.storeSHAs(
+        file,
+        generateSHAs(data),
+      );
+      if (upToDateFile) {
+        // Use the Hashed file when handling the upload
+        storedVersion.files = storedVersion.files.map(f => f.id === upToDateFile.id ? upToDateFile : f);
+
+        await positioner.handleUpload(lock, {
+          file: upToDateFile,
+          app: req.targetApp,
+          channel: upToDateChannel,
+          internalVersion: storedVersion,
+          fileData: data,
+        });
+      } else {
+        d('Database inconsistency detected while releasing for file:', file.id);
+      }
     }
     await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
   }))) {
@@ -294,7 +336,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
   }
 }));
 
-router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -321,7 +363,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete'
   res.json({ success: true });
 }));
 
-router.post('/:id/channel/:channelId/dead', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/dead', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -331,17 +373,29 @@ router.post('/:id/channel/:channelId/dead', requireLogin, a(async (req, res) => 
   }
 
   if (checkFields(req, res, ['version', 'dead'])) {
-    const isGreatest = channel.versions.some(version => semver.gt(version.name, req.body.version));
+    const internalVersion = channel.versions.find(v => v.name === req.body.version);
+    if (!internalVersion) {
+      return res.status(404).json({ error: 'Version not found' });
+    }
+    const isGreatest = !channel.versions
+      .filter(version => version.rollout === 100 && !version.dead)
+      .some(version => semver.gt(version.name, internalVersion.name));
+
     if (isGreatest) {
       d(`User: ${req.user.id} tried to make a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}.  But was rejected for safety reasons`);
       return res.status(400).json({ error: 'You can\'t kill the latest version' });
     }
     d(`User: ${req.user.id} marking a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
-    res.json(await driver.setVersionDead(req.targetApp, channel, req.body.version, req.body.dead));
+
+    const updatedChannel = await driver.setVersionDead(req.targetApp, channel, req.body.version, req.body.dead);
+
+    await updateStaticReleaseMetaData(req.targetApp, channel);
+
+    res.json(updatedChannel);
   }
 }));
 
-router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) => {
+router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
   if (!channel) {
@@ -356,12 +410,37 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, a(async (req, res) 
         error: 'Rollout % has to be a number',
       });
     }
+    const version = channel.versions.find(v => v.name === req.body.version);
+    if (!version) {
+      return res.status(400).json({
+        error: 'Version provided was not found',
+      });
+    }
+    if (version.rollout === 100) {
+      return res.status(400).json({
+        error: 'You cannot change the rollout of a version once it has reached 100%',
+      });
+    }
     d(`User: ${req.user.id} changing a version (${req.body.version}) to have a rollout % of '${req.body.rollout}' for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
-    res.json(await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout));
+    const positioner = new Positioner(store);
+    const updatedChannel = await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout);
+    const updatedVersion = updatedChannel.versions.find(v => v.name === req.body.version);
+    if (updatedVersion) {
+      await positioner.withLock(req.targetApp, async (lock) => {
+        await positioner.potentiallyUpdateLatestInstallers(
+          lock,
+          req.targetApp,
+          updatedChannel,
+          updatedVersion,
+        );
+      });
+    }
+    await updateStaticReleaseMetaData(req.targetApp, updatedChannel);
+    res.json(updatedChannel);
   }
 }));
 
-router.post('/:id/channel/:channelId/upload', upload.any(), a(async (req, res) => {
+router.post('/:id/channel/:channelId/upload', noPendingMigrations, upload.any(), a(async (req, res) => {
   const token = req.headers.authorization;
   if (token !== req.targetApp.token) {
     return res.status(404).json({
@@ -395,7 +474,7 @@ router.post('/:id/channel/:channelId/upload', upload.any(), a(async (req, res) =
         });
       }
       for (const fileName of fileNames) {
-        if (!fileName.indexOf(req.body.version)) {
+        if (fileName.indexOf(req.body.version) === -1) {
           return res.status(400).json({
             error: `The file name "${fileName}" did not contain the provided version, files uploaded to nucleus must contain the version to ensure cache busting`,
           });

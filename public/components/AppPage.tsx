@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { connect, Dispatch } from 'react-redux';
-import { Redirect, Link } from 'react-router';
 import { UploadField } from '@navjobs/upload';
 
-import AkAvatar from '@atlaskit/avatar';
 import AkButton from '@atlaskit/button';
 import AkFieldBase, { Label as AkLabel } from '@atlaskit/field-base';
 import AkFieldText from '@atlaskit/field-text';
@@ -26,6 +24,7 @@ interface AppPageReduxProps {
   apps: AppsSubState;
   baseUpdateUrl: string;
   user: User;
+  hasPendingMigration: boolean;
 }
 interface AppPageReduxDispatchProps {
   setApps: (apps: NucleusApp[]) => any;
@@ -198,7 +197,13 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
           <div className={styles.tab}>
             <h5>Versions</h5>
             <div className={styles.codeCard}>
-              <ChannelVersionList app={app} channel={channel} baseUpdateUrl={this.props.baseUpdateUrl} updateApps={this.fetchApps} />
+              <ChannelVersionList
+                app={app}
+                channel={channel}
+                baseUpdateUrl={this.props.baseUpdateUrl}
+                updateApps={this.fetchApps}
+                hasPendingMigration={this.props.hasPendingMigration}
+              />
             </div>
             <h5>Updater Usage</h5>
             <div className={styles.codeCard}>
@@ -233,6 +238,14 @@ autoUpdater.setFeedURL({
 };`}
               </Highlight>
             </div>
+            <h5>Latest Release Download</h5>
+            <div className={styles.codeCard} style={{ fontSize: 14, fontFamily: '"SFMono-Medium", "SF Mono", "Segoe UI Mono", "Roboto Mono", "Ubuntu Mono", Menlo, Courier, monospace' }}>
+              <p>The latest release in this channel which is set to 100% rollout will be available at:</p>
+              <p>{`${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/latest/{platform}/{arch}/${app.name}.{extension}`}</p>
+              <br />
+              <p>For example, your .EXE installer</p>
+              <p>{`${this.props.baseUpdateUrl}/${app.slug}/${channel.id}/latest/win32/x64/${app.name}.exe`}</p>
+            </div>
             <h5>Yum Repo Usage</h5>
             <div className={styles.codeCard}>
               <Highlight className="bash">
@@ -261,7 +274,7 @@ sudo apt-get install <package-name>`}
         <div style={{ flex: 1 }}>
           <AkFieldText label="Name" placeholder="E.g. Stable" shouldFitContainer required onChange={this.saveChannelName} />
           <div style={{ height: 8 }} />
-          <AkButton appearance="primary" onClick={this.createChannel}>Create</AkButton>
+          <AkButton appearance="primary" onClick={this.createChannel} isDisabled={this.props.hasPendingMigration}>Create</AkButton>
         </div>
       ),
       defaultSelected: channels.length === 0,
@@ -336,7 +349,7 @@ sudo apt-get install <package-name>`}
                     <input className={styles.token} type="text" defaultValue={app.token} disabled />
                   </AkFieldBase>
                   <div style={{ height: 8 }} />
-                  <AkButton appearance="danger" onClick={this.resetToken}>Reset Token</AkButton>
+                  <AkButton appearance="danger" onClick={this.resetToken} isDisabled={this.props.hasPendingMigration}>Reset Token</AkButton>
                 </div>
                 <div className={styles.iconContainer}>
                   <UploadField
@@ -385,10 +398,15 @@ sudo apt-get install <package-name>`}
                   onOpenChange={this.handleOpenChange}
                   onNewItemCreated={this.handleTeamAdd}
                   onRemoved={this.handleTeamRemove}
-                  isDisabled={this.state.teamUpdating}
+                  isDisabled={this.state.teamUpdating || this.props.hasPendingMigration}
                 />
               </div>
-              <WebHookManagement app={app} apps={this.props.apps} setApps={this.props.setApps} />
+              <WebHookManagement
+                app={app}
+                apps={this.props.apps}
+                setApps={this.props.setApps}
+                hasPendingMigration={this.props.hasPendingMigration}
+              />
             </div>
             : (
               <div className={styles.notFound}>
@@ -408,6 +426,7 @@ const mapStateToProps = (state: AppState) => ({
   apps: state.apps,
   baseUpdateUrl: state.base,
   user: state.user.user,
+  hasPendingMigration: state.migrations.hasPendingMigration,
 });
 
 const mapDispatchToProps = (dispatch: Dispatch<void>) => ({

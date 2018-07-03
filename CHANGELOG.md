@@ -1,3 +1,55 @@
+#### 1.0.2 (2018-06-29)
+
+##### Bug Fixes
+
+* **public:** fix linting in public, badly used interface names (073c35a8)
+
+#### 1.0.1 (2018-06-29)
+
+##### Documentation Changes
+
+* declare v0.8.3 as the "stable" release (670dc3d3)
+
+##### Bug Fixes
+
+* **public:** remove 2 second delay on migration (7dcdb02d)
+
+## 1.0.0 (2018-06-29)
+
+##### New Features
+
+* **public:**
+  * add migrator to the front end (491ca9df)
+  * add MSI support and document the latest download URL usage (aad87f03)
+  * use the file index as the download URL for pubblic files (52b868b0)
+* **core-platform:**
+  * add noPendingMigrations helper to enforce migrations rules for rest endpoints (b57ba19c)
+  * only move files to their "latest" location if rollout is 100% (65b31817)
+  * add a "latest" installer for each app channel (da51d44f)
+  * deterministicly generate the RELEASES.json file for the darwin platform (4bc546c6)
+* add Migration logic (237e505c)
+* **file-store:** add new hasFile method to filestores to assist with migrations for the _index file (0e504724)
+
+##### Bug Fixes
+
+* **core-platform:**
+  * add version validation to the rollout REST API (3eb50bd3)
+  * move files to latest in rollout update API with a lock (1af68811)
+
+##### Refactors
+
+* **core-platform:** update Positioner class to use files instead of stray information (61e229e7)
+
+##### Tests
+
+* **core-platform:** add tests for FileIndexMigration (7238f9f6)
+
+#### 0.8.3 (2018-06-28)
+
+##### Performance Improvements
+
+* reduce docker image size by ~500MB (34748858)
+
 #### 0.8.1 (2018-05-24)
 
 ##### Bug Fixes

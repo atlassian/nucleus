@@ -9,13 +9,16 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 
 import { createA } from './utils/a';
-import { port, gpgSigningKey } from './config';
+import { port, gpgSigningKey, localAuth } from './config';
 import driver from './db/driver';
 import store from './files/store';
 import adminRouter from './rest/admin';
 import appRouter from './rest/app';
+import migrationRouter from './rest/migration';
 import { authenticateRouter, setupApp } from './rest/auth';
 import { isGpgKeyValid } from './files/utils/gpg';
+import { registerMigrations } from './migrations';
+import { MigrationStore } from './migrations/BaseMigration';
 
 const d = debug('nucleus');
 const a = createA(d);
@@ -27,6 +30,25 @@ app.use(compression());
 app.use(express.static(path.resolve(__dirname, '..', 'public_out')));
 
 app.use(bodyParser.json());
+
+// THIS IS VERY DANGEROUS, WE USE IT TO BYPASS AUTH IN TESTING
+if (process.env.UNSAFELY_DISABLE_NUCLEUS_AUTH) {
+  d('You have set UNSAFELY_DISABLE_NUCLEUS_AUTH.  THIS IS VERY DANGEROUS');
+  app.use((req, res, next) => {
+    if (!req.user) {
+      const user = localAuth[0];
+      req.user = {
+        id: user.username,
+        displayName: user.displayName,
+        isAdmin: true,
+        photos: [
+          { value: user.photo },
+        ],
+      };
+    }
+    next();
+  });
+}
 
 app.use((req, res, next) => {
   res.error = (err) => {
@@ -69,6 +91,7 @@ restRouter.get('/deepcheck', async (req, res) => {
 restRouter.get('/healthcheck', (req, res) => res.json({ alive: true }));
 restRouter.use('/app', appRouter);
 restRouter.use('/auth', authenticateRouter);
+restRouter.use('/migration', migrationRouter);
 restRouter.use('/admin', (req, res, next) => {
   if (req.user && req.user.isAdmin) return next();
   return res.status(403).json({ error: 'Not an admin' });
@@ -76,7 +99,13 @@ restRouter.use('/admin', (req, res, next) => {
 setupApp(app);
 
 restRouter.get('/config', a(async (req, res) => {
+  const migrations = (await driver.getMigrations()).map(m => (m as any).get());
+  for (const migration of migrations) {
+    (migration as any).dependsOn = MigrationStore.get(migration.key)!.dependsOn;
+  }
+
   res.json({
+    migrations,
     user: req.user,
     baseUpdateUrl: await store.getPublicBaseUrl(),
   });
@@ -133,6 +162,9 @@ d('Setting up server');
     true,
   );
   d('GPG key now public at:', `${await store.getPublicBaseUrl()}/public.key`);
+  d('registering migrations');
+  await registerMigrations();
+  d('migrations all registered');
   app.listen(port, () => {
     d('Nucleus Server started on port:', port);
   });
