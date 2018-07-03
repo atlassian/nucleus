@@ -28,7 +28,7 @@ export class CloudFrontBatchInvalidator {
     return invalidators[store.s3Config.cloudfront.distributionId];
   }
 
-  constructor(private cloudfrontConfig: S3Options['cloudfront']) {
+  private constructor(private cloudfrontConfig: S3Options['cloudfront']) {
     if (cloudfrontConfig) {
       this.queueUp();
     }
