@@ -68,7 +68,7 @@ export class CloudFrontBatchInvalidator {
         console.error({
           err,
           message: 'Failed to invalidate',
-          keys: this.queue.slice(0, 500),
+          keys: itemsToUse,
         });
         this.queue.push(...itemsToUse);
       } else {
