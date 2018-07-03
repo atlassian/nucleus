@@ -314,6 +314,11 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
           internalVersion: storedVersion,
           fileData: data,
         });
+        await positioner.potentiallyUpdateLatestInstallers(
+          lock,
+          req.targetApp,
+          upToDateChannel,
+        );
       } else {
         d('Database inconsistency detected while releasing for file:', file.id);
       }
@@ -431,7 +436,6 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations
           lock,
           req.targetApp,
           updatedChannel,
-          updatedVersion,
         );
       });
     }

@@ -159,21 +159,7 @@ describe('Positioner', () => {
 
       describe('for already uploaded releases -- potentiallyUpdateLatestInstallers', () => {
         it('should do nothing if the rollout is not 100%', async () => {
-          await positioner.potentiallyUpdateLatestInstallers(lock, fakeApp, fakeChannel, { rollout: 50 } as any);
-          expect(fakeStore.putFile.callCount).to.equal(0);
-        });
-
-        it('should do nothing if the version is not latest', async () => {
-          fakeChannel.versions.push({
-            name: '0.0.3',
-            rollout: 100,
-          } as any);
-          await positioner.potentiallyUpdateLatestInstallers(
-            lock,
-            fakeApp,
-            fakeChannel,
-            { name: '0.0.2', rollout: 100 } as any,
-          );
+          await positioner.potentiallyUpdateLatestInstallers(lock, fakeApp, Object.assign({}, fakeChannel, { versions: [{ rollout: 50 } as any] }));
           expect(fakeStore.putFile.callCount).to.equal(0);
         });
 
@@ -181,26 +167,28 @@ describe('Positioner', () => {
           await positioner.potentiallyUpdateLatestInstallers(
             lock,
             fakeApp,
-            fakeChannel, {
-              name: '0.0.2',
-              rollout: 100,
-              files: [{
-                type: 'installer',
-                fileName: 'test.exe',
-                platform: 'win32',
-                arch: 'x64',
-              }, {
-                type: 'update',
-                fileName: 'test.nupkg',
-                platform: 'win32',
-                arch: 'x64',
-              }, {
-                type: 'installer',
-                fileName: 'test.dmg',
-                platform: 'darwin',
-                arch: 'x64',
-              }],
-            } as any,
+            Object.assign({}, fakeChannel, {
+              versions: [{
+                name: '0.0.2',
+                rollout: 100,
+                files: [{
+                  type: 'installer',
+                  fileName: 'test.exe',
+                  platform: 'win32',
+                  arch: 'x64',
+                }, {
+                  type: 'update',
+                  fileName: 'test.nupkg',
+                  platform: 'win32',
+                  arch: 'x64',
+                }, {
+                  type: 'installer',
+                  fileName: 'test.dmg',
+                  platform: 'darwin',
+                  arch: 'x64',
+                }],
+              } as any],
+            }),
           );
           expect(
             fakeStore.getFile.getCalls().filter(call => !call.args[0].endsWith('.lock')).length,
@@ -213,65 +201,6 @@ describe('Positioner', () => {
           expect(fakeStore.putFile.getCall(3).args[0]).to.equal('fake_slug/fake_channel_id/latest/darwin/x64/Fake Slug.dmg.ref');
           expect(fakeStore.putFile.getCall(3).args[1].toString()).to.equal('0.0.2');
         });
-      });
-
-      it('should upload the "Latest" file for a windows installer type release', async () => {
-        await positioner.handleUpload(lock, {
-          app: fakeApp,
-          channel: fakeChannel,
-          internalVersion: { name: '0.0.2', rollout: 100 } as any,
-          file: {
-            ...generateSHAs(Buffer.from('')),
-            arch: 'ia32',
-            platform: 'win32',
-            fileName: 'thing.exe',
-            type: 'installer',
-          },
-          fileData: Buffer.from(''),
-        });
-        expect(fakeStore.putFile.callCount).to.equal(2);
-        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/win32/ia32/Fake Slug.exe');
-        expect(fakeStore.putFile.secondCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/win32/ia32/Fake Slug.exe.ref');
-        expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal('0.0.2');
-      });
-
-      it('should upload the "Latest" file for a darwin installer type release', async () => {
-        await positioner.handleUpload(lock, {
-          app: fakeApp,
-          channel: fakeChannel,
-          internalVersion: { name: '0.0.2', rollout: 100 } as any,
-          file: {
-            ...generateSHAs(Buffer.from('')),
-            arch: 'x64',
-            platform: 'darwin',
-            fileName: 'thing.dmg',
-            type: 'installer',
-          },
-          fileData: Buffer.from(''),
-        });
-        expect(fakeStore.putFile.callCount).to.equal(2);
-        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/darwin/x64/Fake Slug.dmg');
-        expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal('0.0.2');
-      });
-
-      it('should upload the "Latest" file for a linux installer type release', async () => {
-        await positioner.handleUpload(lock, {
-          app: fakeApp,
-          channel: fakeChannel,
-          internalVersion: { name: '0.0.2', rollout: 100 } as any,
-          file: {
-            ...generateSHAs(Buffer.from('')),
-            arch: 'ia32',
-            platform: 'linux',
-            fileName: 'thing.deb',
-            type: 'installer',
-          },
-          fileData: Buffer.from(''),
-        });
-        expect(fakeStore.putFile.callCount).to.equal(2);
-        expect(fakeStore.putFile.firstCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/linux/ia32/Fake Slug.deb');
-        expect(fakeStore.putFile.secondCall.args[0]).to.equal('fake_slug/fake_channel_id/latest/linux/ia32/Fake Slug.deb.ref');
-        expect(fakeStore.putFile.secondCall.args[1].toString()).to.equal('0.0.2');
       });
 
       it('should not upload the "Latest" file for any installer type release if it is not the latest release', async () => {

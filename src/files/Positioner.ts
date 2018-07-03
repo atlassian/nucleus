@@ -99,10 +99,6 @@ export default class Positioner {
       // in the future)
       await this.store.putFile(this.getIndexKey(app, channel, internalVersion, file), fileData);
     }
-
-    if (internalVersion.rollout === 100 && !internalVersion.dead && this.isLatestRelease(internalVersion, channel)) {
-      await this.copyFileToLatest(app, channel, internalVersion, file);
-    }
   }
 
   public getIndexKey(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
@@ -119,45 +115,54 @@ export default class Positioner {
    * positioning.  This will only occur if the rollout is 100 and the version is the "latest" according
    * to semver.
    */
-  public async potentiallyUpdateLatestInstallers(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, internalVersion: NucleusVersion) {
+  public async potentiallyUpdateLatestInstallers(lock: PositionerLock, app: NucleusApp, channel: NucleusChannel) {
     if (lock !== await this.currentLock(app)) return;
-    if (internalVersion.rollout !== 100) return;
-    if (internalVersion.dead) return;
-    if (!this.isLatestRelease(internalVersion, channel)) return;
 
-    for (const file of internalVersion.files) {
-      await this.copyFileToLatest(app, channel, internalVersion, file);
+    const latestThings: {
+      [latestKey: string]: {
+        indexKey: string;
+        version: string;
+      };
+    } = {};
+    const rolledOutVersions = channel.versions.filter(v => v.rollout === 100 && !v.dead);
+
+    for (const version of rolledOutVersions.sort((a, b) => semver.compare(a.name, b.name))) {
+      for (const file of version.files) {
+        if (file.type !== 'installer') continue;
+
+        const latestKey = this.getLatestKey(app, channel, version, file);
+        const indexKey = this.getIndexKey(app, channel, version, file);
+
+        latestThings[latestKey] = {
+          indexKey,
+          version: version.name,
+        };
+      }
+    }
+
+    for (const latestKey in latestThings) {
+      const latestThing = latestThings[latestKey];
+      await this.copyFile(latestThing.indexKey, latestKey, latestThing.version);
     }
   }
 
   /**
    * It is assumed the called has a validated lock
    */
-  private async copyFileToLatest(app: NucleusApp, channel: NucleusChannel, version: NucleusVersion, file: NucleusFile) {
-    if (file.type === 'installer') {
-      const latestKey = this.getLatestKey(app, channel, version, file);
-      const latestRef = (await this.store.getFile(`${latestKey}.ref`)).toString();
-
-      if (latestRef !== version.name) {
-        await this.store.putFile(
-          latestKey,
-          await this.store.getFile(this.getIndexKey(app, channel, version, file)),
-          true,
-        );
-        await this.store.putFile(
-          `${latestKey}.ref`,
-          Buffer.from(version.name),
-          true,
-        );
-      }
+  private async copyFile(fromKey: string, toKey: string, ref = '') {
+    const refKey = `${toKey}.ref`;
+    if (!ref || (await this.store.getFile(refKey)).toString() !== ref) {
+      await this.store.putFile(
+        toKey,
+        await this.store.getFile(fromKey),
+        true,
+      );
+      await this.store.putFile(
+        refKey,
+        Buffer.from(ref),
+        true,
+      );
     }
-  }
-
-  private isLatestRelease(version: NucleusVersion, channel: NucleusChannel) {
-    const greaterVersion = channel.versions
-      .filter(v => v.rollout === 100 && !v.dead)
-      .find(v => semver.gt(v.name, version.name));
-    return !greaterVersion;
   }
 
   public updateWin32ReleasesFiles = async (lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, arch: string) => {

@@ -247,13 +247,13 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
 
   private modifyRollout = async () => {
     if (this.state.modalVersion && !this.state.modalVersion.isPreRelease) {
-      this.setState({
-        actionRunning: true,
-      });
       const rawValue = prompt('Please enter a new rollout percentage (between 0 and 100)');
       if (typeof rawValue !== 'string') return;
       const newRollout = parseInt(rawValue, 10);
       if (isNaN(newRollout) || newRollout < 0 || newRollout > 100) return alert('Invalid rollout percentage entered, expected a number between 0 and 100');
+      this.setState({
+        actionRunning: true,
+      });
       const headers = new Headers();
       headers.append('Content-Type', 'application/json');
       await fetch(`/rest/app/${this.props.app.id}/channel/${this.props.channel.id}/rollout`, {
