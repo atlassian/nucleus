@@ -21,10 +21,10 @@ const getSignRpmCommand = (dir: string, args: string[]): [string, string[]] => {
   if (process.platform === 'linux') {
     return ['rpmsign', args];
   }
-  args = escapeShellArguments(args);
+  const safeArgs = escapeShellArguments(args);
   return [
     'docker',
-    ['run', '--rm', '-v', `${dir}:/root/working`, 'marshallofsound/sh', `(gpg-agent --daemon) && (gpg --import key.asc || true) && (rpmsign ${args.join(' ')})`],
+    ['run', '--rm', '-v', `${dir}:/root/working`, 'marshallofsound/sh', `(gpg-agent --daemon) && (gpg --import key.asc || true) && (rpmsign ${safeArgs.join(' ')})`],
   ];
 };
 
