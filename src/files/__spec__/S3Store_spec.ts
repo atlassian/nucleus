@@ -3,7 +3,8 @@ import { expect } from 'chai';
 import { EventEmitter } from 'events';
 import { stub, SinonStubbedInstance } from 'sinon';
 
-import S3Store, { CloudFrontBatchInvalidator } from '../s3/S3Store';
+import { CloudFrontBatchInvalidator } from '../s3/CloudFrontBatchInvalidator';
+import S3Store from '../s3/S3Store';
 
 describe('S3Store', () => {
   let store: S3Store;

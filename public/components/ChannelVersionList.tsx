@@ -40,7 +40,7 @@ export default class ChannelVersionList extends React.PureComponent<ChannelVersi
     temporaryVersions: [],
     modalVersion: null as (PossiblePreReleaseVersion | null),
     modalOpen: false,
-    actionRunning: true,
+    actionRunning: false,
   };
 
   componentDidMount() {
