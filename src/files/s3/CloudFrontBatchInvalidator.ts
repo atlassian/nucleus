@@ -11,7 +11,7 @@ const invalidators: {
   [id: string]: CloudFrontBatchInvalidator;
 } = {};
 
-const INVALIDATE_PER_ATTEMPT = 10;
+const INVALIDATE_PER_ATTEMPT = 500;
 
 export class CloudFrontBatchInvalidator {
   private lastAdd: number = 0;
