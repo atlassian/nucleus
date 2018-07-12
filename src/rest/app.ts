@@ -400,6 +400,26 @@ router.post('/:id/channel/:channelId/dead', requireLogin, noPendingMigrations, a
   }
 }));
 
+router.get('/:id/channel/:channelId/invalidate-cache', a(async (req, res) => {
+  if (stopNoPerms(req, res)) return;
+
+  const channel = await driver.getChannel(req.targetApp, req.params.channelId);
+  if (!channel) {
+    return res.status(404).json({
+      error: 'Channel not found',
+    });
+  }
+
+  const positioner = new Positioner(store);
+  await positioner.withLock(req.targetApp, async (lock) => {
+    await positioner.potentiallyUpdateLatestInstallers(
+      lock,
+      req.targetApp,
+      channel,
+    );
+  });
+}));
+
 router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations, a(async (req, res) => {
   if (stopNoPerms(req, res)) return;
   const channel = await driver.getChannel(req.targetApp, req.params.channelId);
