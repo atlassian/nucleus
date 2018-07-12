@@ -38,6 +38,7 @@ export class CloudFrontBatchInvalidator {
 
   public addToBatch = (key: string) => {
     if (!this.cloudfrontConfig) return;
+    if (this.queue.some(item => item === `/${key}`)) return;
     this.queue.push(`/${key}`);
     this.lastAdd = Date.now();
   }
