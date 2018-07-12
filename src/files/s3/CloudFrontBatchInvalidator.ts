@@ -11,6 +11,8 @@ const invalidators: {
   [id: string]: CloudFrontBatchInvalidator;
 } = {};
 
+const INVALIDATE_PER_ATTEMPT = 10;
+
 export class CloudFrontBatchInvalidator {
   private lastAdd: number = 0;
   private queue: string[] = [];
@@ -50,8 +52,8 @@ export class CloudFrontBatchInvalidator {
       return this.queueUp();
     }
     d('running cloudfront batch invalidator');
-    const itemsToUse = this.queue.slice(0, 500);
-    this.queue = this.queue.slice(500);
+    const itemsToUse = this.queue.slice(0, INVALIDATE_PER_ATTEMPT);
+    this.queue = this.queue.slice(INVALIDATE_PER_ATTEMPT);
 
     const cloudFront = new AWS.CloudFront();
     cloudFront.createInvalidation({
@@ -65,11 +67,11 @@ export class CloudFrontBatchInvalidator {
       },
     }, (err, invalidateInfo) => {
       if (err) {
-        console.error({
+        console.error(JSON.stringify({
           err,
           message: 'Failed to invalidate',
           keys: itemsToUse,
-        });
+        }));
         this.queue.push(...itemsToUse);
       } else {
         d('batch invalidation succeeded, moving along');
