@@ -54,7 +54,7 @@ const checkFields = (req: Express.Request, res: Express.Response, fields: string
 };
 
 const hasPermission = (req: Express.Request, app: NucleusApp) => {
-  return (req.user as User).isAdmin || app.team.indexOf(req.user.id) !== -1;
+  return req.user && ((req.user as User).isAdmin || app.team.indexOf(req.user.id) !== -1);
 };
 
 const onlyPermission = (req: Express.Request, apps: NucleusApp[]) => {
@@ -418,6 +418,10 @@ router.get('/:id/channel/:channelId/invalidate-cache', a(async (req, res) => {
       channel,
     );
   });
+
+  await updateStaticReleaseMetaData(req.targetApp, channel);
+
+  res.json({ success: true });
 }));
 
 router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations, a(async (req, res) => {
