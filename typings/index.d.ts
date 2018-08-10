@@ -13,8 +13,13 @@ interface OpenIDOptions {
 }
 
 interface S3Options {
+  init?: {
+    endpoint?: string;
+    s3ForcePathStyle?: boolean;
+  }
+
   bucketName: string;
-  
+
   cloudfront: {
     distributionId: string;
     publicUrl: string;

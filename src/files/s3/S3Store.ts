@@ -15,7 +15,7 @@ export default class S3Store implements IFileStore {
   constructor(public s3Config = config.s3) {}
 
   public async hasFile(key: string) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(this.s3Config.init);
     return await new Promise<boolean>(resolve => s3.headObject({
       Bucket: this.s3Config.bucketName,
       Key: key,
@@ -26,7 +26,7 @@ export default class S3Store implements IFileStore {
   }
 
   public async getFileSize(key: string) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(this.s3Config.init);
     return await new Promise<number>(resolve => s3.headObject({
       Bucket: this.s3Config.bucketName,
       Key: key,
@@ -38,7 +38,7 @@ export default class S3Store implements IFileStore {
 
   public async putFile(key: string, data: Buffer, overwrite = false) {
     d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(this.s3Config.init);
     const keyExists = async () => await this.hasFile(key);
     let wrote = false;
     if (overwrite || !await keyExists()) {
@@ -63,7 +63,7 @@ export default class S3Store implements IFileStore {
   public async getFile(key: string) {
     d(`Fetching file: '${key}'`);
     return await new Promise<Buffer>((resolve) => {
-      const s3 = new AWS.S3();
+      const s3 = new AWS.S3(this.s3Config.init);
       s3.getObject({
         Bucket: this.s3Config.bucketName,
         Key: key,
@@ -79,7 +79,7 @@ export default class S3Store implements IFileStore {
 
   public async deletePath(key: string) {
     d(`Deleting files under path: '${key}'`);
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(this.s3Config.init);
     const keys = await this.listFiles(key);
     d(`Found objects to delete: [${keys.join(', ')}]`);
     await new Promise((resolve) => {
@@ -95,15 +95,22 @@ export default class S3Store implements IFileStore {
   }
 
   public async getPublicBaseUrl() {
-    if (this.s3Config.cloudfront) {
-      return this.s3Config.cloudfront.publicUrl;
+    const { cloudfront, init } = this.s3Config;
+
+    if (cloudfront) {
+      return cloudfront.publicUrl;
     }
+
+    if (init && init.endpoint) {
+      return init.endpoint;
+    }
+
     return `https://${this.s3Config.bucketName}.s3.amazonaws.com`;
   }
 
   public async listFiles(prefix: string) {
     d(`Listing files under path: '${prefix}'`);
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(this.s3Config.init);
     const objects = await new Promise<AWS.S3.Object[]>((resolve) => {
       s3.listObjects({
         Bucket: this.s3Config.bucketName,

@@ -15,14 +15,14 @@ module.exports = {
    * The data store to use when persisting plugins and versions.  Current possible values
    * are "sequelize", ensure you also supply valid connection details for your
    * chosen strategy below.
-   * 
+   *
    * PR's welcome to add another data store.
    */
   dbStrategy: 'sequelize',
 
   /**
    * Sequelize connection information, please note all options are required
-   * 
+   *
    * database: The name of the database to connect to
    * dialect: The type of SQL database this is, check sequelize docs for more info
    * username: Username to use when connecting
@@ -40,14 +40,14 @@ module.exports = {
    * The file store to use when persisting update files and metadata.  Current possible
    * values are "s3" and "local" ensure you also supply valid connection details if
    * required for your chosen strategy below.
-   * 
+   *
    * PR's welcome to add another file store.
    */
   fileStrategy: 'local',
 
   /**
    * Local file configuration
-   * 
+   *
    * root: Path on disk to the root of the static file store
    * staticUrl: The HTTP url to use to access the static file store remotely
    */
@@ -59,12 +59,17 @@ module.exports = {
   /**
    * There is actually no authentication config for s3, all config must be done through the standard AWS
    * environment variables or through EC2 IAM roles.
-   * 
+   *
    * See http://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-credentials-node.html
-   * 
+   *
    * Bucket / Region / CloudFront config goes here though
    */
   s3: {
+    // init: {
+    //   endpoint: '' // The alternate endpoint to reach the S3 instance at,
+    //   s3ForcePathStyle: true // Always use path style URLs
+    // }
+
     bucketName: '', // The name for your S3 Bucket
 
     cloudfront: { // If you don't have CloudFront set up and just want to use the S3 bucket set this to "null
@@ -75,19 +80,19 @@ module.exports = {
 
   /**
    * The authentication strategy to use when logging users in.  Current possible values are "local",
-   * "openid" and "github".  Make you also supply the required authentication details 
+   * "openid" and "github".  Make you also supply the required authentication details
    */
   authStrategy: 'local',
 
   /**
    * Local authentication details
-   * 
+   *
    * The `adminIdentifiers` array should be a list of usernames
-   * 
+   *
    * DISCLAIMER: This strategy should ONLY be used for local development and NEVER
    * used in production.  Unicorns cry every time this setting is used in production.
    * Don't make the unicorns cry.
-   * 
+   *
    * displayName: The user friendly name of this user
    * username: A unique identifier to use when this user signs in, please note uniqueness is
    *           not enforced
@@ -103,13 +108,13 @@ module.exports = {
 
   /**
    * OpenID authentication details
-   * 
+   *
    * The `adminIdentifiers` array should be a list of email
    * addresses for users to consider admins
-   * 
+   *
    * realm: The domain that the server is hosted on
    * stateless: Stateless mode for openID
-   * profile: Whether to fetch profile information, should normally be true 
+   * profile: Whether to fetch profile information, should normally be true
    * providerURL: Your openID provider URL
    * domain: Domain to restrict email addresses to
    */
@@ -123,10 +128,10 @@ module.exports = {
 
   /**
    * GitHub authentication details
-   * 
+   *
    * The `adminIdentifiers` array should be a list of GitHub usernames
    * to consider admins
-   * 
+   *
    * clientID: GitHub API client ID
    * clientSecret: GitHub API clientSecret
    * realm: The domain the server is hosted on
@@ -143,11 +148,11 @@ module.exports = {
 
   /**
    * Session options, in development just leave this as default.
-   * 
+   *
    * IN PRODUCTION PLEASE USE REDIS!
-   * 
+   *
    * type: Can be either "redis" or null
-   * 
+   *
    * redis:
    *   host: The host URL for the redis instance
    *   port: The port for the redis instance
@@ -166,7 +171,7 @@ module.exports = {
 
   /**
    * GPG key to use when signing APT and YUM releases
-   * 
+   *
    * Requires to be unlocked (no password) and have both the private and
    * public key.
    */
