@@ -1,3 +1,18 @@
+#### 1.1.1 (2018-08-21)
+
+##### New Features
+
+* **api:** add new invalidate-cache REST endpoint (65f900a8)
+
+##### Bug Fixes
+
+* stringify team before sending (e17f5266)
+* **file-store:**
+  * invalidate 500 things at a time (88049123)
+  * only add each item to the invalidation queue once (c44b66de)
+  * invalidate less things and log properly (68641006)
+* **api:** handle not logged in users, send response when wiping cache (bb3c7492)
+
 #### 1.0.2 (2018-06-29)
 
 ##### Bug Fixes
