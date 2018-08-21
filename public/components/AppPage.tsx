@@ -94,7 +94,7 @@ class AppPage extends React.PureComponent<AppPageReduxProps & AppPageReduxDispat
         method: 'POST',
         credentials: 'include',
         body: JSON.stringify({
-          team: tmpTeam.filter((a, index) => tmpTeam.indexOf(a) === index),
+          team: JSON.stringify(tmpTeam.filter((a, index) => tmpTeam.indexOf(a) === index)),
         }),
         headers: new Headers({
           'Content-Type': 'application/json',
