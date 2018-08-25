@@ -34,7 +34,7 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
 
 ### Docker
 
-You'll need to set up your own docker image using a Dockefile like below.
+You'll need to set up your own docker image using a Dockerfile like below.
 
 ```docker
 FROM atlassian/nucleus
