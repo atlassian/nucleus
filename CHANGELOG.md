@@ -1,3 +1,9 @@
+#### 1.1.3 (2018-09-18)
+
+##### Bug Fixes
+
+* sanitze the cloudfront key for all uses (6ce54edc)
+
 #### 1.1.2 (2018-09-18)
 
 ##### Bug Fixes
