@@ -1,3 +1,15 @@
+#### 1.1.3 (2018-09-18)
+
+##### Bug Fixes
+
+* sanitze the cloudfront key for all uses (6ce54edc)
+
+#### 1.1.2 (2018-09-18)
+
+##### Bug Fixes
+
+* encode the URI when invalidating cache for cloudfront (a4db8975)
+
 #### 1.1.1 (2018-08-21)
 
 ##### New Features
