@@ -11,10 +11,13 @@ try {
     }
   }
   if (!config) {
-    config =  require('../config.js');
+    config = require('../config.js');
   }
 } catch (err) {
-  console.error('Could not locate config.js file, please ensure it exists');
+  console.error(err);
+  console.error(
+    'Make sure config.js exists and does not contain any syntax errors!',
+  );
   process.exit(1);
 }
 
@@ -35,7 +38,13 @@ export const organization = config!.organization;
 export const gpgSigningKey = config!.gpgSigningKey;
 export const defaultRollout = config!.defaultRollout || 0;
 
-if (defaultRollout < 0 || defaultRollout > 100 ||
-    typeof defaultRollout !== 'number' || Math.round(defaultRollout) !== defaultRollout) {
-  throw new Error(`Expected 'config.defaultRollout' to be an integer between 0 and 100 but it was "${defaultRollout}"`);
+if (
+  defaultRollout < 0 ||
+  defaultRollout > 100 ||
+  typeof defaultRollout !== 'number' ||
+  Math.round(defaultRollout) !== defaultRollout
+) {
+  throw new Error(
+    `Expected 'config.defaultRollout' to be an integer between 0 and 100 but it was "${defaultRollout}"`,
+  );
 }
