@@ -10,7 +10,7 @@ export default class LocalStore implements IFileStore {
     return path.resolve(this.localConfig.root, ...keys);
   }
 
-  public async putFile(key: string, data: Buffer, overwrite = false) {
+  public async putFile(key: string, data: Buffer, overwrite = false, isPublic = true) {
     if (overwrite || !await fs.pathExists(this.getPath(key))) {
       await fs.mkdirp(path.dirname(this.getPath(key)));
       await fs.writeFile(this.getPath(key), data);

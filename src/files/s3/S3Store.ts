@@ -36,8 +36,8 @@ export default class S3Store implements IFileStore {
     }));
   }
 
-  public async putFile(key: string, data: Buffer, overwrite = false) {
-    d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
+  public async putFile(key: string, data: Buffer, overwrite = false, isPublic = true) {
+    d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}, public=${isPublic ? 'true' : 'false'}`);
     const s3 = new AWS.S3();
     const keyExists = async () => await this.hasFile(key);
     let wrote = false;
@@ -47,7 +47,7 @@ export default class S3Store implements IFileStore {
         Bucket: this.s3Config.bucketName,
         Key: key,
         Body: data,
-        ACL: 'public-read',
+        ACL: isPublic ? 'public-read' : 'private',
       }, (err, data) => {
         if (err) return reject(err);
         resolve();
