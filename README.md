@@ -47,7 +47,7 @@ Then running your built docker image will run nucleus on port 8080.
 ### Manual
 
 ```bash
-git clone git@github.com:atlassian/nucleus.git nucleus-server
+git clone https://github.com/atlassian/nucleus.git nucleus-server
 cd nucleus-server
 cp config.template.js config.js
 yarn
