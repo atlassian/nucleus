@@ -15,7 +15,7 @@ export default class S3Store implements IFileStore {
   constructor(public s3Config = config.s3) {}
 
   public async hasFile(key: string) {
-    const s3 = new AWS.S3(this.s3Config.init);
+    const s3 = this.getS3();
     return await new Promise<boolean>(resolve => s3.headObject({
       Bucket: this.s3Config.bucketName,
       Key: key,
@@ -26,7 +26,7 @@ export default class S3Store implements IFileStore {
   }
 
   public async getFileSize(key: string) {
-    const s3 = new AWS.S3(this.s3Config.init);
+    const s3 = this.getS3();
     return await new Promise<number>(resolve => s3.headObject({
       Bucket: this.s3Config.bucketName,
       Key: key,
@@ -38,7 +38,7 @@ export default class S3Store implements IFileStore {
 
   public async putFile(key: string, data: Buffer, overwrite = false) {
     d(`Putting file: '${key}', overwrite=${overwrite ? 'true' : 'false'}`);
-    const s3 = new AWS.S3(this.s3Config.init);
+    const s3 = this.getS3();
     const keyExists = async () => await this.hasFile(key);
     let wrote = false;
     if (overwrite || !await keyExists()) {
@@ -63,7 +63,7 @@ export default class S3Store implements IFileStore {
   public async getFile(key: string) {
     d(`Fetching file: '${key}'`);
     return await new Promise<Buffer>((resolve) => {
-      const s3 = new AWS.S3(this.s3Config.init);
+      const s3 = this.getS3();
       s3.getObject({
         Bucket: this.s3Config.bucketName,
         Key: key,
@@ -79,7 +79,7 @@ export default class S3Store implements IFileStore {
 
   public async deletePath(key: string) {
     d(`Deleting files under path: '${key}'`);
-    const s3 = new AWS.S3(this.s3Config.init);
+    const s3 = this.getS3();
     const keys = await this.listFiles(key);
     d(`Found objects to delete: [${keys.join(', ')}]`);
     await new Promise((resolve) => {
@@ -110,7 +110,7 @@ export default class S3Store implements IFileStore {
 
   public async listFiles(prefix: string) {
     d(`Listing files under path: '${prefix}'`);
-    const s3 = new AWS.S3(this.s3Config.init);
+    const s3 = this.getS3();
     const objects = await new Promise<AWS.S3.Object[]>((resolve) => {
       s3.listObjects({
         Bucket: this.s3Config.bucketName,
@@ -120,5 +120,12 @@ export default class S3Store implements IFileStore {
       });
     });
     return objects.map(object => object.Key).filter(key => !!key) as string[];
+  }
+
+  private getS3() {
+    if (this.s3Config.init) {
+      return new AWS.S3(this.s3Config.init);
+    }
+    return new AWS.S3();
   }
 }
