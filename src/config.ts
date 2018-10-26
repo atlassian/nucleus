@@ -2,22 +2,58 @@ import * as path from 'path';
 
 let config: IConfig | null = null;
 
-try {
-  if (process.argv.length > 2) {
-    try {
-      config = require(path.resolve(process.cwd(), process.argv[2]));
-    } catch (err) {
-      // Ignore
-    }
+interface ResolvedConfig {
+  err?: any;
+  config: IConfig | null;
+}
+
+const resolveConfig = (path: string): ResolvedConfig => {
+  try {
+    require.resolve(path);
+  } catch {
+    return {
+      config: null,
+    };
   }
-  if (!config) {
-    config = require('../config.js');
+  try {
+    return {
+      config: require(path),
+    };
+  } catch (err) {
+    return {
+      err,
+      config: null,
+    };
   }
-} catch (err) {
-  console.error(err);
-  console.error(
-    'Make sure config.js exists and does not contain any syntax errors!',
-  );
+};
+
+const possibleConfigs = [
+  path.resolve(__dirname, '../config.js'),
+  path.resolve(process.cwd(), 'config.js'),
+];
+
+if (process.argv.length > 2) {
+  possibleConfigs.unshift(path.resolve(process.cwd(), process.argv[2]));
+}
+
+for (const option of possibleConfigs) {
+  const resolvedConfig = resolveConfig(option);
+  if (resolvedConfig.config) {
+    config = resolvedConfig.config;
+    break;
+  }
+  if (resolvedConfig.err) {
+    console.error('An error occurred while loading your config file');
+    console.error('Please ensure it does not have syntax errors');
+    console.error(resolvedConfig.err);
+    process.exit(1);
+  }
+}
+
+if (!config) {
+  console.error('Failed to find your config file at any of the search paths');
+  console.error('Paths:', possibleConfigs);
+  console.error('Please ensure one exists');
   process.exit(1);
 }
 
