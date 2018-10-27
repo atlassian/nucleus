@@ -66,6 +66,7 @@ export const openid: OpenIDOptions = config!.openid || <any>{};
 export const adminIdentifiers = config!.adminIdentifiers || [];
 export const authStrategy = config!.authStrategy;
 export const s3 = config!.s3;
+export const gcp = config!.gcp;
 export const local = config!.local;
 export const sequelize = config!.sequelize;
 export const localAuth = config!.localAuth;
