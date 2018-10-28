@@ -32,6 +32,7 @@ export const startTestNucleus = async function (this: any) {
         DEBUG: 'nucleus*',
         UNSAFELY_DISABLE_NUCLEUS_AUTH: 'true',
       }),
+      stdio: 'inherit',
     },
   );
   server = http.createServer((req, res) => {
