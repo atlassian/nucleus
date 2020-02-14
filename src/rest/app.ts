@@ -256,7 +256,7 @@ router.get('/:id/channel/:channelId/temporary_releases/:temporarySaveId/:fileNam
   d(`User: ${req.user.id} requested an unencrypted version of a preRelease file: (${req.targetApp.slug}, ${save.version}, ${req.params.fileName})`);
   const positioner = new Positioner(store);
   const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, req.params.fileName, save.cipherPassword);
-  res.setHeader('Content-disposition', `attachment; filename=${req.params.fileName}`);
+  res.setHeader('Content-disposition', `attachment; filename=${JSON.stringify(req.params.fileName)}`);
   res.status(200).write(data);
   res.send();
 }));
