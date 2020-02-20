@@ -26,6 +26,13 @@ interface S3Options {
   } | null
 }
 
+interface GcpOptions {
+  projectId: string;
+  bucketName: string;
+  cachePolicyTransient: string;
+  publicUrl?: string;
+}
+
 interface LocalOptions {
   root: string;
   staticUrl: string;
@@ -70,6 +77,7 @@ interface IConfig {
   openid: OpenIDOptions;
   adminIdentifiers: string[];
   s3: S3Options;
+  gcp: GcpOptions;
   local: LocalOptions;
   sequelize: SequelizeOptions;
   localAuth: LocalAuthOptions;
@@ -212,18 +220,18 @@ declare module 'is-png' {
 
 declare module 'to-ico' {
   type ToIco = (files: Buffer[], options: {
-    resize?: boolean;
-    sizes: (16 | 24 | 32 | 48 | 64 | 128 | 256)[];
-  }) => Promise<Buffer>;
+      resize?: boolean;
+      sizes: (16 | 24 | 32 | 48 | 64 | 128 | 256)[];
+    }) => Promise<Buffer>;
   const foo: ToIco;
   export = foo;
 }
 
 declare module 'child-process-promise' {
   export const spawn: (exe: string, args: string[], opts?: {
-    cwd?: string;
-    capture?: string[];
-  }) => Promise<{
+      cwd?: string;
+      capture?: string[];
+    }) => Promise<{
     stdout: Buffer;
     stderr: Buffer;
   }> & { childProcess: any };

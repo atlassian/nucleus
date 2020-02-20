@@ -38,8 +38,8 @@ module.exports = {
 
   /**
    * The file store to use when persisting update files and metadata.  Current possible
-   * values are "s3" and "local" ensure you also supply valid connection details if
-   * required for your chosen strategy below.
+   * values are "s3", "gcp", and "local". Ensure you also supply valid connection details
+   * if required for your chosen strategy below.
    *
    * PR's welcome to add another file store.
    */
@@ -79,8 +79,33 @@ module.exports = {
   },
 
   /**
-   * The authentication strategy to use when logging users in.  Current possible values are "local",
-   * "openid" and "github".  Make you also supply the required authentication details
+   * Configuration for Google Cloud Storage (if filestrategy: 'gcp' is set above)
+   * 
+   * Authentification is automatically done over machine credentials (be sure to set correct API access
+   * scopes on the machine), or via environment variables
+   * 
+   * projectId: The project ID of the GCP project containing the bucket
+   * bucketName: The name of the bucket that will contain the data
+   * publicUrl: Fully qualified URL where your files are reachable.
+   *            You only need to set this if you use a CDN or redirect a URL to your bucket
+   * cachePolicyTransient: A cache policy to use for files that contain release information.
+   *                       Valid settings are 'no-cache' or 'max-age=3600' (where 3600 can be any
+   *                       number in seconds). Google will cache your data in edge-caches according
+   *                       to this policy, preventing clients from seeing a new release for up to
+   *                       max-age seconds. This setting trades performance for release speed.
+   *                       Tune as desired, especially if behind a CDN
+   */
+  gcp: {
+    projectId: '',
+    bucketName: '',
+    // publicUrl: 'https://example.com', // if you don't know what to put here you don't need this setting
+
+    cachePolicyTransient: 'max-age=30',
+  },
+
+  /**
+   * The authentication strategy to use when logging users in.  Current possible values are 'local',
+   * 'openid' and 'github'.  Make you also supply the required authentication details
    */
   authStrategy: 'local',
 
@@ -100,10 +125,10 @@ module.exports = {
    * photo: A URL for their profile, entirely optional, just makes things look nicer ;)
    */
   localAuth: [{
-    displayName: 'Charlie',
-    username: 'charlie',
-    password: 'charlie',
-    photo: 'https://pbs.twimg.com/profile_images/1219364727/charlie-support_400x400.png'
+      displayName: 'Charlie',
+      username: 'charlie',
+      password: 'charlie',
+      photo: 'https://pbs.twimg.com/profile_images/1219364727/charlie-support_400x400.png'
   }],
 
   /**
