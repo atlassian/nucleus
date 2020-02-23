@@ -14,7 +14,7 @@ There is a upload endpoint inside Nucleus, you simply hit it with the
 parameters outlined below as a POST request with a FormData body.
 
 ```
-POST: /rest/app/:appId/channel/:channelId/upload
+POST: /app/:appId/channel/:channelId/upload
 Headers:
   Authorization: <AppAuthorizationToken>
 BODY:
