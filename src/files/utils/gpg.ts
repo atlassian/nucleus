@@ -19,7 +19,7 @@ export const gpgSign = async (file: string, out: string) => {
       throw new Error('Bad GPG import');
     }
     const keyId = keyMatch[1];
-    await cp.spawn('gpg', ['-abs', '--default-key', keyId, '-o', out, file]);
+    await cp.spawn('gpg', ['-abs','--digest-algo',  'SHA256', '--default-key', keyId, '-o', out, file]);
   });
 };
 
