@@ -30,6 +30,7 @@ module.exports = {
    * host: Hostname of database
    * port: Port to use when connecting
    * storage: Path to sqlite file, only used for sqlite dialect
+   * logging: Boolean indicating whether or not to output Sequelize logs (defaults to false)
    */
   sequelize: {
     dialect: 'sqlite',

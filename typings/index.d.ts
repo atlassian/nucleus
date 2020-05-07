@@ -39,6 +39,7 @@ interface SequelizeOptions {
   host: string;
   port: number;
   storage: string;
+  logging?: boolean;
 }
 
 interface LocalUser {

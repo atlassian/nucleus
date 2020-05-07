@@ -248,7 +248,7 @@ export default async function () {
     host: config.sequelize.host,
     port: config.sequelize.port,
     storage: config.sequelize.storage,
-    logging: false,
+    logging: config.sequelize.logging ? (msg: any) => d(msg) : false,
   });
 
   sequelize.addModels([
