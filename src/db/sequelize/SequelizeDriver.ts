@@ -4,8 +4,10 @@ import BaseDriver from '../BaseDriver';
 import getSequelize, { App, TeamMember, Channel, Version, File, TemporarySave, TemporarySaveFile, WebHook, WebHookError, Migration } from './models';
 import BaseMigration from '../../migrations/BaseMigration';
 import * as config from '../../config';
+import * as debug from 'debug';
 
 const hat = require('hat');
+const d = debug('nucleus:db:sequelize-driver');
 
 const includeSettings = {
   include: [
@@ -279,12 +281,15 @@ export default class SequelizeDriver extends BaseDriver {
   public async registerVersionFiles(save: ITemporarySave) {
     await this.ensureConnected();
 
+    d(`Retrieving save with id ${save.id}`);
     const rawSave = (await TemporarySave.findOne<TemporarySave>({
       where: { id: save.id },
     }))!;
+    d(`Retrieving channel with id ${rawSave.channelId}`);
     const rawChannel = (await Channel.findOne<Channel>({
       where: { id: rawSave.channelId },
     }))!;
+    d(`Retrieving version with name ${save.version} from channel ${rawChannel.id}`);
     let dbVersion = await Version.findOne<Version>({
       where: { name: save.version, channelId: rawSave.channelId },
       include: [File],
@@ -299,7 +304,12 @@ export default class SequelizeDriver extends BaseDriver {
         rollout: channelHasVersion ? config.defaultRollout : 100,
         channelId: rawChannel.id,
       });
-      await dbVersion.save();
+      try {
+        await dbVersion.save();
+      } catch (e) {
+        d(`New version save failed with versionId: ${dbVersion.id}, name: ${save.version}, channelId: ${rawChannel.id}`, e);
+        throw e;
+      }
       dbVersion.files = [];
     }
 
@@ -314,6 +324,7 @@ export default class SequelizeDriver extends BaseDriver {
           type: this.typeFromPlatformAndName(save.platform, fileName),
           versionId: dbVersion.id,
         });
+        d(`Saving new file ${newFile.id} with fileName: ${fileName}, type: ${newFile.type}, platform: ${newFile.arch}, arch: ${newFile.arch}, versionId: ${newFile.versionId}`);
         await newFile.save();
         dbVersion.files.push(newFile);
       }
