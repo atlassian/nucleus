@@ -29,7 +29,7 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
 
 ### Docker
 
-You'll need to set up your own docker image using a Dockefile like below.
+You'll need to set up your own docker image using a `Dockerfile` like below.
 
 ```docker
 FROM atlassian/nucleus
@@ -37,7 +37,7 @@ FROM atlassian/nucleus
 COPY config.js /opt/service/config.js
 ```
 
-Then running your built docker image will run nucleus on port 8080.
+Then running your built docker image will run nucleus on the port you configured (`default is 8080`).
 
 ### Manual
 
@@ -125,6 +125,8 @@ To enable logging you need to set `DEBUG=nucleus*`.
 * macOS / Windows
   * `docker`
   * `gpg`
+* Resources
+  * \>= 1.5GB RAM
 
 ## Contributors
 
