@@ -1,6 +1,7 @@
 import * as chai from 'chai';
 
 import * as helpers from './_helpers';
+import { webhookTimeout } from '../config';
 
 const { expect } = chai;
 
@@ -89,7 +90,7 @@ describe('webbhook endpoints', () => {
       });
 
       it('should succeed if a valid url and secret are provided', async function () {
-        this.timeout(4000);
+        this.timeout(webhookTimeout);
 
         const response = await helpers.request
           .post(`/app/${app.id}/webhook`)
@@ -110,7 +111,7 @@ describe('webbhook endpoints', () => {
   describe('/app/:id/webhook/:webhookId', () => {
     describe('DELETE', () => {
       it('should error if the webhook does not exist', async function () {
-        this.timeout(4000);
+        this.timeout(webhookTimeout);
 
         const response = await helpers.request
           .del(`/app/${app.id}/webhook/100`);
@@ -121,7 +122,7 @@ describe('webbhook endpoints', () => {
       });
 
       it('should unregister a valid webhook', async function () {
-        this.timeout(4000);
+        this.timeout(webhookTimeout);
 
         const response = await helpers.request
           .del(`/app/${app.id}/webhook/1`);

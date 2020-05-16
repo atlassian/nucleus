@@ -70,6 +70,7 @@ export const local = config!.local;
 export const sequelize = config!.sequelize;
 export const localAuth = config!.localAuth;
 export const sessionConfig = config!.sessionConfig;
+export const webhookTimeout = config!.webhookTimeout;
 export const organization = config!.organization;
 export const gpgSigningKey = config!.gpgSigningKey;
 export const defaultRollout = config!.defaultRollout || 0;

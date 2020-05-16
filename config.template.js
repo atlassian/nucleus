@@ -167,6 +167,16 @@ module.exports = {
     }
   },
 
+  /**
+   * The maximum amount of time (in milliseconds) that the webhooks should wait for POST and DELETE requests.
+   * 
+   * This is helpful if you're uploading with a slow connection or your application artifacts are very large.
+   * 
+   * If your upload duration exceeds this timeout setting then you will receive a socket hangup error.
+   */
+  webhookTimeout: 4000,
+
+
   organization: 'My Company Here',
 
   /**

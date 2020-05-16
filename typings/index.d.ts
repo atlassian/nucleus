@@ -74,6 +74,7 @@ interface IConfig {
   sequelize: SequelizeOptions;
   localAuth: LocalAuthOptions;
   sessionConfig: SessionConfig;
+  webhookTimeout: number;
   organization?: string;
   gpgSigningKey: string;
   defaultRollout: number;
