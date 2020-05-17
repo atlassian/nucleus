@@ -473,8 +473,8 @@ router.post('/:id/channel/:channelId/upload', noPendingMigrations, upload.any(),
   req.setTimeout(uploadTimeout, () => {
     d(`Configured timeout of ${uploadTimeout}ms was exceeded.  Please check the server's "uploadTimeout" configuration for uploads.`);
     return res.status(408).json({
-        error: `Request timed out`
-      });
+      error: `Request timed out`,
+    });
   });
   const token = req.headers.authorization;
   if (token !== req.targetApp.token) {
