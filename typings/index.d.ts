@@ -63,6 +63,7 @@ interface SessionConfig {
 interface IConfig {
   port: number;
   baseURL: string;
+  uploadTimeout: number;
   fileStrategy: string;
   dbStrategy: string;
   authStrategy: string;

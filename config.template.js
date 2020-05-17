@@ -11,6 +11,15 @@ module.exports = {
    */
   baseURL: 'http://localhost:8888',
 
+
+  /**
+   * Upload Timeout
+   * The timeout (in milliseconds) of the upload rest endpoint.  
+   * If the upload takes longer than the specified limit then the connection will close.
+   * If this happens then the release artifacts will be incomplete and left in a prerelease state and should be deleted manually.
+   */
+  uploadTimeout: 1800000,
+
   /**
    * The data store to use when persisting plugins and versions.  Current possible values
    * are "sequelize", ensure you also supply valid connection details for your
