@@ -59,6 +59,7 @@ if (!config) {
 
 export const port = config!.port;
 export const baseURL = config!.baseURL;
+export const uploadTimeout = config!.uploadTimeout || 1800000;
 export const fileStrategy = config!.fileStrategy;
 export const dbStrategy = config!.dbStrategy;
 export const github: GitHubOptions = config!.github || <any>{};

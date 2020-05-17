@@ -12,6 +12,7 @@ import { generateSHAs } from '../files/utils/sha';
 import WebHook from './WebHook';
 
 import { requireLogin, noPendingMigrations } from './_helpers';
+import { uploadTimeout } from '../config';
 
 const d = debug('nucleus:rest');
 const router = express();
@@ -469,6 +470,12 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations
 }));
 
 router.post('/:id/channel/:channelId/upload', noPendingMigrations, upload.any(), a(async (req, res) => {
+  req.setTimeout(uploadTimeout, () => {
+    d(`Configured timeout of ${uploadTimeout}ms was exceeded.  Please check the server's "uploadTimeout" configuration for uploads.`);
+    return res.status(408).json({
+      error: `Request timed out`,
+    });
+  });
   const token = req.headers.authorization;
   if (token !== req.targetApp.token) {
     return res.status(404).json({
