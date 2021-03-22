@@ -120,7 +120,7 @@ router.use('/:id', a(async (req, res, next) => {
   }
 }));
 
-const stopNoPerms = (req, res) => {
+const stopNoPerms = (req: any, res: any) => {
   const token = req.headers.authorization;
   let validToken = false, validUser = false;
   if (req.targetApp && token === req.targetApp.token) {
@@ -132,7 +132,7 @@ const stopNoPerms = (req, res) => {
   if (validToken || validUser) {
     return false;
   } else {
-    d(`A user (${req.user ? req.user.id : "none"}) or token (${(token || "none").substring(0, 4)}...) tried to access an application (${req.targetApp.slug}) that they don't have permission for`);
+    d(`A user (${req.userq ? req.user.id : "none"}) or token (${(token || "none").substring(0, 4)}...) tried to access an application (${req.targetApp.slug}) that they don't have permission for`);
     res.status(403).json({
       error: 'No Permission',
     });
