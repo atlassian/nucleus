@@ -120,15 +120,24 @@ router.use('/:id', a(async (req, res, next) => {
   }
 }));
 
-const stopNoPerms = (req: Express.Request, res: Express.Response) => {
-  if (!hasPermission(req, req.targetApp)) {
-    d(`A user (${req.user.id}) tried to access an application (${req.targetApp.slug}) that they don't have permission for`);
+const stopNoPerms = (req, res) => {
+  const token = req.headers.authorization;
+  let validToken = false, validUser = false;
+  if (token === req.targetApp?.token) {
+    validToken = true;
+  }
+  if (hasPermission(req, req.targetApp)) {
+    validUser = true;
+  }
+  if (validToken || validUser) {
+    return false;
+  } else {
+    d(`A user (${req.user.id}) or token (${token?.substring(0, 3)}...) tried to access an application (${req.targetApp.slug}) that they don't have permission for`);
     res.status(403).json({
       error: 'No Permission',
     });
     return true;
   }
-  return false;
 };
 
 router.get('/:id', requireLogin, a(async (req, res) => {
@@ -469,12 +478,7 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations
 }));
 
 router.post('/:id/channel/:channelId/upload', noPendingMigrations, upload.any(), a(async (req, res) => {
-  const token = req.headers.authorization;
-  if (token !== req.targetApp.token) {
-    return res.status(404).json({
-      error: 'Could not find provided channel',
-    });
-  }
+  if (stopNoPerms(req, res)) return;
   if (checkFields(req, res, ['version', 'platform', 'arch'])) {
     if (!semver.valid(req.body.version)) {
       return res.status(400).json({
