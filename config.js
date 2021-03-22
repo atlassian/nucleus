@@ -115,7 +115,7 @@ module.exports = {
   sessionConfig: {
     type: null,
     // type: "redis",
-    secret: "WonderElectronSessionSecret",
+    secret: process.env.NUCLEUS_SESSION_SECRET,
 
     // redis: {
     //   host: "nucleus-unencrypted.swe0ir.ng.0001.use2.cache.amazonaws.com",
