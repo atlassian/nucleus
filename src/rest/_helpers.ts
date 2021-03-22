@@ -6,8 +6,8 @@ import driver from '../db/driver';
 const d = debug('nucleus:rest:helpers');
 
 export const requireLogin: express.RequestHandler = (req, res, next) => {
-  if (!req.user) {
-    d(`Unauthenticated user attempted to access: ${req.url}`);
+  if (!req.user && !req.headers.authorization) {
+    d(`Unauthenticated user and no token attempted to access: ${req.url}`);
     return res.status(403).json({ error: 'Forbidden' });
   }
   next();
