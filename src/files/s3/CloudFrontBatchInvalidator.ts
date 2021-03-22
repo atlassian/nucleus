@@ -2,6 +2,7 @@ import * as AWS from 'aws-sdk';
 import * as debug from 'debug';
 
 import S3Store from './S3Store';
+import * as config from '../../config';
 
 const hat = require('hat');
 
@@ -57,7 +58,7 @@ export class CloudFrontBatchInvalidator {
     const itemsToUse = this.queue.slice(0, INVALIDATE_PER_ATTEMPT);
     this.queue = this.queue.slice(INVALIDATE_PER_ATTEMPT);
 
-    const cloudFront = new AWS.CloudFront();
+    const cloudFront = this.getCloudFront();
     cloudFront.createInvalidation({
       DistributionId: this.cloudfrontConfig!.distributionId,
       InvalidationBatch: {
@@ -80,5 +81,12 @@ export class CloudFrontBatchInvalidator {
       }
       this.queueUp();
     });
+  }
+
+  private getCloudFront() {
+    if (config.s3.init) {
+      return new AWS.CloudFront(config.s3.init);
+    }
+    return new AWS.CloudFront();
   }
 }
