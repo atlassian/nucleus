@@ -262,7 +262,7 @@ router.get('/:id/channel/:channelId/temporary_releases/:temporarySaveId/:fileNam
     });
   }
 
-  d(`User: ${req.user.id} requested an unencrypted version of a preRelease file: (${req.targetApp.slug}, ${save.version}, ${req.params.fileName})`);
+  d(`User ${req.user ? req.user.id : "none"} or token (${(req.headers.authorization || "none").substring(0, 4)}...) requested an unencrypted version of a preRelease file: (${req.targetApp.slug}, ${save.version}, ${req.params.fileName})`);
   const positioner = new Positioner(store);
   const data = await positioner.getTemporaryFile(req.targetApp, save.saveString, req.params.fileName, save.cipherPassword);
   res.setHeader('Content-disposition', `attachment; filename=${req.params.fileName}`);
@@ -294,7 +294,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/release
   let storedFileNames: string[];
 
   if (!(await positioner.withLock(req.targetApp, async (lock) => {
-    d(`User: ${req.user.id} promoted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} becomes version: ${save.version}`);
+    d(`User ${req.user ? req.user.id : "none"} or token (${(req.headers.authorization || "none").substring(0, 4)}...) promoted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} becomes version: ${save.version}`);
 
     storedFileNames = await driver.registerVersionFiles(save);
     d(`Tested files: [${save.filenames.join(', ')}] but stored: [${storedFileNames.join(', ')}]`);
@@ -365,7 +365,7 @@ router.post('/:id/channel/:channelId/temporary_releases/:temporarySaveId/delete'
     });
   }
 
-  d(`User: ${req.user.id} deleted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} would have been version: ${save.version} with ${save.filenames.length} files`);
+  d(`User ${req.user ? req.user.id : "none"} or token (${(req.headers.authorization || "none").substring(0, 4)}...) deleted a temporary release for app: '${req.targetApp.slug}' on channel: ${channel.name} would have been version: ${save.version} with ${save.filenames.length} files`);
   const positioner = new Positioner(store);
   if (!(await positioner.withLock(req.targetApp, async (lock) => {
     await positioner.cleanUpTemporaryFile(lock, req.targetApp, save.saveString);
@@ -396,10 +396,10 @@ router.post('/:id/channel/:channelId/dead', requireLogin, noPendingMigrations, a
       .some(version => semver.gt(version.name, internalVersion.name));
 
     if (isGreatest) {
-      d(`User: ${req.user.id} tried to make a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}.  But was rejected for safety reasons`);
+      d(`User ${req.user ? req.user.id : "none"} or token (${(req.headers.authorization || "none").substring(0, 4)}...) tried to make a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}.  But was rejected for safety reasons`);
       return res.status(400).json({ error: 'You can\'t kill the latest version' });
     }
-    d(`User: ${req.user.id} marking a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
+    d(`User ${req.user ? req.user.id : "none"} or token (${(req.headers.authorization || "none").substring(0, 4)}...) marking a version (${req.body.version}) as dead=${req.body.dead} for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
 
     const updatedChannel = await driver.setVersionDead(req.targetApp, channel, req.body.version, req.body.dead);
 
@@ -459,7 +459,7 @@ router.post('/:id/channel/:channelId/rollout', requireLogin, noPendingMigrations
         error: 'You cannot change the rollout of a version once it has reached 100%',
       });
     }
-    d(`User: ${req.user.id} changing a version (${req.body.version}) to have a rollout % of '${req.body.rollout}' for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
+    d(`User ${req.user ? req.user.id : "none"} or token (${(req.headers.authorization || "none").substring(0, 4)}...) changing a version (${req.body.version}) to have a rollout % of '${req.body.rollout}' for app: '${req.targetApp.slug}' on channel: ${channel.name}`);
     const positioner = new Positioner(store);
     const updatedChannel = await driver.setVersionRollout(req.targetApp, channel, req.body.version, req.body.rollout);
     const updatedVersion = updatedChannel.versions.find(v => v.name === req.body.version);
