@@ -47,7 +47,6 @@ export default class S3Store implements IFileStore {
         Bucket: this.s3Config.bucketName,
         Key: key,
         Body: data,
-        ACL: 'public-read',
       }, (err, data) => {
         if (err) return reject(err);
         resolve();
