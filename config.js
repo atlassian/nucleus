@@ -67,7 +67,7 @@ module.exports = {
       region: 'us-east-2',
     },
 
-    bucketName: process.env.S3_BUCKET_NUCLEUS_BUCKET,
+    bucketName: process.env.S3_BUCKET_DOWNLOADS_BUCKET,
 
     cloudfront: {
       distributionId: process.env.CLOUDFRONT_DISTRIBUTION_ID,
