@@ -71,7 +71,7 @@ module.exports = {
 
     cloudfront: {
       distributionId: process.env.CLOUDFRONT_DISTRIBUTION_ID,
-      publicUrl: process.env.CLOUDFRONT_S3_DOMAIN,
+      publicUrl: process.env.CLOUDFRONT_S3_URL_PREFIX,
     },
   },
 
