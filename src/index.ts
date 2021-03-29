@@ -165,9 +165,10 @@ d('Setting up server');
   d('registering migrations');
   await registerMigrations();
   d('migrations all registered');
-  app.listen(port, () => {
+  let server = app.listen(port, () => {
     d('Nucleus Server started on port:', port);
   });
+  server.timeout = 10 * 60 * 1000;
 })().catch((err) => {
   if (typeof err === 'string') {
     console.error(err.red);
