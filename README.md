@@ -28,16 +28,33 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
 ## Setup
 
 ### Docker
-
-You'll need to set up your own docker image using a Dockefile like below.
-
-```docker
-FROM atlassian/nucleus
-
-COPY config.js /opt/service/config.js
-```
-
-Then running your built docker image will run nucleus on port 8080.
+1. Clone the repository with `git clone`.
+2. Copy `config.template.js` to `config.js` in the current git directory.
+3. Edit `config.js` to suit your needs.
+4. Put your GPG public and private signing keys in `config.js` by following these steps:
+ i. Generate keys with **empty passphrase** with `gpg --full-generate-key`.
+ ii. Run `gpg --list-secret-keys --keyid-format LONG` to see your key id. Example: *"rsa4096/C8E2A0E20C2AEB3B 2018-05-23 [...]"*, where "C8E2A0E20C2AEB3B" is your key ID.
+ iii. Run `gpg --armor --export YOUR_KEY_ID` to get public key
+ iv. Run `gpg --armor --export-private-key YOUR_KEY_ID` OR `gpg --armor --export-secret-key YOUR_KEY_ID` (*whichever works*) to get private key.
+ v. Paste the keys in the `gpgSigningKey` section in `config.js` like this (***enclosed in backticks, not single apostrophe***):
+    ```
+      gpgSigningKey: `
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    
+    YOUR PUBLIC KEY CONTENTS
+    
+    -----END PGP PUBLIC KEY BLOCK-----
+    -----BEGIN PGP PRIVATE KEY BLOCK-----
+    
+    YOUR PRIVATE KEY CONTENTS
+    
+    -----END PGP PRIVATE KEY BLOCK-----
+    `
+    };
+    ```
+5. To build the docker image, use `docker build -t nucleus-server .`
+6. To run a container from the image, run `docker run -p 3030:3030 -d nucleus-server`.
+7. Then access the Nucleus dashboard on port 3030.
 
 ### Manual
 
