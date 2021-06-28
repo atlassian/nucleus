@@ -53,7 +53,7 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
     };
     ```
 5. To build the docker image, use `docker build -t nucleus-server .`
-6. To run a container from the image, run `docker run -p 3030:3030 -d nucleus-server`.
+6. To run a container from the image, run `docker run -p 127.0.0.1:3030:3030 -p 127.0.0.1:9999:9999 -d nucleus-server`.
 7. Then access the Nucleus dashboard on port 3030.
 
 ### Manual
