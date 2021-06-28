@@ -32,11 +32,11 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
 2. Copy `config.template.js` to `config.js` in the current git directory.
 3. Edit `config.js` to suit your needs.
 4. Put your GPG public and private signing keys in `config.js` by following these steps:
- i. Generate keys with **empty passphrase** with `gpg --full-generate-key`.
- ii. Run `gpg --list-secret-keys --keyid-format LONG` to see your key id. Example: *"rsa4096/C8E2A0E20C2AEB3B 2018-05-23 [...]"*, where "C8E2A0E20C2AEB3B" is your key ID.
- iii. Run `gpg --armor --export YOUR_KEY_ID` to get public key
- iv. Run `gpg --armor --export-private-key YOUR_KEY_ID` OR `gpg --armor --export-secret-key YOUR_KEY_ID` (*whichever works*) to get private key.
- v. Paste the keys in the `gpgSigningKey` section in `config.js` like this (***enclosed in backticks, not single apostrophe***):
+ 1. Generate keys with **empty passphrase** with `gpg --full-generate-key`.
+ 2. Run `gpg --list-secret-keys --keyid-format LONG` to see your key id. Example: *"rsa4096/C8E2A0E20C2AEB3B 2018-05-23 [...]"*, where "C8E2A0E20C2AEB3B" is your key ID.
+ 3. Run `gpg --armor --export YOUR_KEY_ID` to get public key
+ 4. Run `gpg --armor --export-private-key YOUR_KEY_ID` OR `gpg --armor --export-secret-key YOUR_KEY_ID` (*whichever works*) to get private key.
+ 5. Paste the keys in the `gpgSigningKey` section in `config.js` like this (***enclosed in backticks, not single apostrophe***):
     ```
       gpgSigningKey: `
     -----BEGIN PGP PUBLIC KEY BLOCK-----
