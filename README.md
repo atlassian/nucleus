@@ -27,7 +27,6 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
 
 ## Setup
 
-### Docker
 1. Clone the repository with `git clone`.
 2. Copy `config.template.js` to `config.js` in the current git directory.
 3. Edit `config.js` to suit your needs.
@@ -52,19 +51,7 @@ Please note that using Nucleus requires that you use Electron `>=2.0.0`.
     `
     };
     ```
-5. To build the docker image, use `docker build -t nucleus-server .`
-6. To run a container from the image, run `docker run -p 127.0.0.1:3030:3030 -p 127.0.0.1:9999:9999 -d nucleus-server`.
-7. Then access the Nucleus dashboard on port 3030.
-
-### Manual
-
-```bash
-git clone https://github.com/atlassian/nucleus.git nucleus-server
-cd nucleus-server
-cp config.template.js config.js
-yarn
-yarn dev
-```
+6. Run `yarn`, followed by `yarn dev`
 
 This will launch Nucleus running on your local machine with a local
 file store and a SQLite database.
