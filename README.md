@@ -64,7 +64,7 @@ YOUR PRIVATE KEY CONTENTS
 `
 };
 ```
-10.Run yarn, followed by yarn dev
+10. Run `yarn`, followed by `yarn dev`.
 11. This will launch Nucleus running on your local machine with a local file store and a SQLite database.
 
 This will launch Nucleus running on your local machine with a local
