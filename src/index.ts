@@ -168,7 +168,7 @@ d('Setting up server');
   let server = app.listen(port, () => {
     d('Nucleus Server started on port:', port);
   });
-  server.timeout = 30 * 60 * 1000;
+  server.timeout = parseInt(process.env.IDLE_TIMEOUT_SECONDS || "600") * 1000;
 })().catch((err) => {
   if (typeof err === 'string') {
     console.error(err.red);
