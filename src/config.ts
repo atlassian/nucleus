@@ -63,6 +63,7 @@ export const fileStrategy = config!.fileStrategy;
 export const dbStrategy = config!.dbStrategy;
 export const github: GitHubOptions = config!.github || <any>{};
 export const openid: OpenIDOptions = config!.openid || <any>{};
+export const openidconnect: OpenIDConnectOptions = config!.openidconnect || <any>{};
 export const adminIdentifiers = config!.adminIdentifiers || [];
 export const authStrategy = config!.authStrategy;
 export const s3 = config!.s3;

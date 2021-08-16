@@ -12,6 +12,19 @@ interface OpenIDOptions {
   photoResolver: (email: string) => string;
 }
 
+interface OpenIDConnectOptions {
+  issuer: string;
+  authorizationURL: string;
+  tokenURL: string;
+  userInfoURL: string;
+  clientID: string;
+  clientSecret: string;
+  callbackURL: string;
+  scopes: string[] | string;
+  domain: string;
+  photoResolver?: (email: string) => string;
+}
+
 interface S3Options {
   init?: {
     endpoint?: string;
@@ -68,6 +81,7 @@ interface IConfig {
   authStrategy: string;
   github: GitHubOptions;
   openid: OpenIDOptions;
+  openidconnect: OpenIDConnectOptions;
   adminIdentifiers: string[];
   s3: S3Options;
   local: LocalOptions;

@@ -12,3 +12,4 @@ public_out
 .files
 test_out
 db.sqlite
+.DS_STORE
