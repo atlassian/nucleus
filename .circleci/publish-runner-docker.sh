@@ -20,7 +20,7 @@ fi
 # First 8 characters of SHA
 export COMMIT=${CIRCLE_SHA1:0:8}
 # Docker Hub Repo
-export REPO=samatlassian/nucleus-ci-runner
+export REPO=akatlassian/nucleus-ci-runner
 
 cd .circleci
 docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
