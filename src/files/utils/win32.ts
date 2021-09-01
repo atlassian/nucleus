@@ -61,6 +61,7 @@ export const updateWin32ReleasesFiles = async ({
   );
   await store.putFile(releasesKey, Buffer.from(releases, 'utf8'), true);
 
+  let uploads = [];
   for (let rollout = 0; rollout <= 100; rollout += 1) {
     const rolloutKey = path.posix.join(root, `${rollout}`, 'RELEASES');
     const rolloutReleases = await generateWin32ReleasesStructure(
@@ -73,6 +74,7 @@ export const updateWin32ReleasesFiles = async ({
       },
       rollout,
     );
-    await store.putFile(rolloutKey, Buffer.from(rolloutReleases, 'utf8'), true);
+    uploads.push(store.putFile(rolloutKey, Buffer.from(rolloutReleases, 'utf8'), true));
   }
+  await Promise.all(uploads);
 };
