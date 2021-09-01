@@ -167,12 +167,14 @@ export default class Positioner {
 
   public updateWin32ReleasesFiles = async (lock: PositionerLock, app: NucleusApp, channel: NucleusChannel, arch: string) => {
     if (lock !== await this.currentLock(app)) return;
+    let cachedFileSizes = new Map<string, number>();
     return await updateWin32ReleasesFiles({
       app,
       channel,
       arch,
       store: this.store,
       positioner: this,
+      cachedFileSizes,
     });
   }
 
@@ -191,7 +193,8 @@ export default class Positioner {
 
     if (await this.store.putFile(key, fileData) && file.fileName.endsWith('.nupkg')) {
       d('Pushed a nupkg file to the file store so appending release information to RELEASES');
-      await updateWin32ReleasesFiles({ app, channel, arch: file.arch, store: this.store, positioner: this });
+      let cachedFileSizes = new Map<string, number>();
+      await updateWin32ReleasesFiles({ app, channel, arch: file.arch, store: this.store, positioner: this, cachedFileSizes });
     }
   }
 
