@@ -75,7 +75,7 @@ export default class Positioner {
   }) {
     // Validate arch
     if (lock !== await this.currentLock(app)) return;
-    if (file.arch !== 'ia32' && file.arch !== 'x64') return;
+    if (file.arch !== 'ia32' && file.arch !== 'x64' && file.arch !== 'arm64') return;
     d(`Handling upload (${file.fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${internalVersion.name}) on platform/arch (${file.platform}/${file.arch})`);
 
     if (!process.env.NO_NUCLEUS_INDEX) {
