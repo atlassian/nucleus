@@ -305,7 +305,7 @@ export default class SequelizeDriver extends BaseDriver {
 
     const storedFileNames: string[] = [];
     for (const fileName of save.filenames) {
-      if (!(dbVersion.files || []).some(file => this.isInherentlySameFile(file.fileName, fileName))) {
+      if (!(dbVersion.files || []).some(file => this.isInherentlySameFile(file.fileName, fileName) && file.arch === save.arch && file.platform === save.platform)) {
         storedFileNames.push(fileName);
         const newFile = new File({
           fileName,
