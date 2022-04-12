@@ -23,6 +23,25 @@ export const gpgSign = async (file: string, out: string) => {
   });
 };
 
+// Same as gpgSign(), but remove -b to generate an inline signature instead of a detached one,
+// and add --clearsign to print the message in clear text
+export const gpgSignInline = async (file: string, out: string) => {
+  await withTmpDir(async (tmpDir) => {
+    const key = path.resolve(tmpDir, 'key.asc');
+    await fs.writeFile(key, config.gpgSigningKey);
+    const [stdout, stderr] = await spawnPromiseAndCapture('gpg', ['--import', key]);
+    try { await fs.remove(out); } catch (err) {}
+    const keyImport = stdout.toString() + '--' + stderr.toString();
+    const keyMatch = keyImport.match(/ key ([A-Za-z0-9]+):/);
+    if (!keyMatch || !keyMatch[1]) {
+      console.error(JSON.stringify(keyImport));
+      throw new Error('Bad GPG import');
+    }
+    const keyId = keyMatch[1];
+    await cp.spawn('gpg', ['-as', '--clearsign', '--default-key', keyId, '-o', out, file]);
+  });
+};
+
 export const isGpgKeyValid = async () => {
   if (!config.gpgSigningKey) return false;
   return await withTmpDir(async (tmpDir) => {
