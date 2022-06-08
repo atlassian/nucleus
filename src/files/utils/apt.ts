@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as semver from 'semver';
 
 import { gpgSign, gpgSignInline } from './gpg';
-import { syncDirectoryToStore, syncStoreToDirectory } from './sync';
+import { syncDirectoryToStore } from './sync';
 import { withTmpDir } from './tmp';
 import * as config from '../../config';
 
