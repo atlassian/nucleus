@@ -123,9 +123,9 @@ export const addFileToYumRepo = async (store: IFileStore, {
     // Copy the RPMs
     for (const version of channel.versions) {
       if (!version.dead) {
-        const file = (version.files || []).find((f) => f.fileName.endsWith(".rpm") && f.platform === "linux");
-        const fname = file ? `${version.name}-${file.fileName}` : undefined;
-        if (fname) {
+        const versionFile = (version.files || []).find((f) => f.fileName.endsWith(".rpm") && f.platform === "linux");
+        if (versionFile && versionFile.fileName !== file.fileName) {
+          const fname = `${version.name}-${versionFile.fileName}`;
           await fs.writeFile(`${tmpDir}/${fname}`, await store.getFile(`${storeKey}/${fname}`));
         }
       }
