@@ -1,6 +1,7 @@
 import * as cp from 'child-process-promise';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as semver from 'semver';
 
 import { gpgSign, gpgSignInline } from './gpg';
 import { syncDirectoryToStore, syncStoreToDirectory } from './sync';
@@ -105,12 +106,26 @@ export const addFileToAptRepo = async (store: IFileStore, {
 }: HandlePlatformUploadOpts) => {
   await withTmpDir(async (tmpDir) => {
     const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'debian');
-    await syncStoreToDirectory(
-      store,
-      storeKey,
-      tmpDir,
-    );
     await fs.mkdirs(path.resolve(tmpDir, 'binary'));
+
+    // Find the latest Version for which we have a .deb File
+    let latestVersion;
+    let latestVersionFile;
+    for (const version of channel.versions) {
+      if (!version.dead && (!latestVersion || semver.gt(version.name, latestVersion.name))) {
+        const versionFile = (version.files || []).find((f) => f.fileName.endsWith(".deb") && f.platform === "linux");
+        if (versionFile) {
+          latestVersion = version;
+          latestVersionFile = versionFile;
+        }
+      }
+    }
+    if (latestVersion && latestVersionFile && internalVersion.name !== latestVersion.name) {
+      // There's a newer version than the one we're uploading (rare!). Download that .deb.
+      const fname = `${latestVersion.name}-${latestVersionFile.fileName}`;
+      await fs.writeFile(`${tmpDir}/binary/${fname}`, await store.getFile(`${storeKey}/binary/${fname}`));
+    }
+
     const binaryPath = path.resolve(tmpDir, 'binary', `${internalVersion.name}-${file.fileName}`);
     if (await fs.pathExists(binaryPath)) {
       throw new Error('Uploaded a duplicate file');
