@@ -1,11 +1,14 @@
 import * as cp from 'child-process-promise';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as debug from 'debug';
 
 import { spawnPromiseAndCapture, escapeShellArguments } from './spawn';
 import { syncDirectoryToStore, syncStoreToDirectory } from './sync';
 import { withTmpDir } from './tmp';
 import * as config from '../../config';
+
+const d = debug(`nucleus:files:yum`);
 
 const getCreateRepoCommand = (dir: string, args: string[]): [string, string[]] => {
   if (process.platform === 'linux') {
@@ -81,6 +84,7 @@ const signAllRpmFiles = async (dir: string) => {
     .filter(file => file.endsWith('.rpm'))
     .map(file => path.resolve(dir, file));
   for (const rpm of rpmFiles) {
+    d(`Signing ${rpm}`);
     await signRpm(rpm);
   }
 };
@@ -109,17 +113,29 @@ export const addFileToYumRepo = async (store: IFileStore, {
 }: HandlePlatformUploadOpts) => {
   await withTmpDir(async (tmpDir) => {
     const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'redhat');
+    // Copy the XML files in repodata/
+    await fs.mkdir(`${tmpDir}/repodata`);
     await syncStoreToDirectory(
       store,
-      storeKey,
-      tmpDir,
+      `${storeKey}/repodata`,
+      `${tmpDir}/repodata`,
     );
+    // Copy the RPMs
+    for (const version of channel.versions) {
+      if (!version.dead) {
+        const fname = (version.files || []).find((f) => f.fileName.endsWith(".rpm") && f.platform === "linux")?.fileName;
+        if (fname) {
+          await fs.writeFile(`${tmpDir}/${fname}`, await store.getFile(`${storeKey}/${fname}`));
+        }
+      }
+    }
     const binaryPath = path.resolve(tmpDir, `${internalVersion.name}-${file.fileName}`);
     if (await fs.pathExists(binaryPath)) {
       throw new Error('Uploaded a duplicate file');
     }
     await fs.writeFile(binaryPath, fileData);
     await signAllRpmFiles(tmpDir);
+    d(`Updating repo`);
     const [exe, args] = getCreateRepoCommand(tmpDir, ['-v', '--update', '--no-database', '--deltas', './']);
     await cp.spawn(exe, args, {
       cwd: tmpDir,
@@ -129,6 +145,7 @@ export const addFileToYumRepo = async (store: IFileStore, {
       storeKey,
       tmpDir,
     );
+    d(`Creating repo file`);
     await createRepoFile(store, app, channel);
   });
 };
