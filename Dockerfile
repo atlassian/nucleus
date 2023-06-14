@@ -25,6 +25,6 @@ COPY webpack.*.js postcss.config.js README.md /opt/service/
 # Install dependencies
 RUN yarn --cache-folder ../ycache && yarn build:server && yarn build:fe:prod && yarn --production --cache-folder ../ycache && rm -rf ../ycache
 
-EXPOSE 8080
+EXPOSE 3030
 
 ENTRYPOINT ["npm", "run", "start:server:prod", "--"]
