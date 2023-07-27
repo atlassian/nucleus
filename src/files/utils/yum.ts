@@ -115,11 +115,6 @@ export const addFileToYumRepo = async (store: IFileStore, {
     const storeKey = path.posix.join(app.slug, channel.id, 'linux', 'redhat');
     // Copy the XML files in repodata/
     await fs.mkdir(`${tmpDir}/repodata`);
-    await syncStoreToDirectory(
-      store,
-      `${storeKey}/repodata`,
-      `${tmpDir}/repodata`,
-    );
     // Copy the RPMs
     for (const version of channel.versions) {
       if (!version.dead) {
