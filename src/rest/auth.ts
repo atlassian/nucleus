@@ -20,7 +20,7 @@ router.get('/callback', passport.authenticate(strategyName, { failureRedirect: '
   res.redirect('/');
 });
 router.get('/logout', (req, res) => {
-  req.logOut();
+  req.logout();
   res.redirect('/');
 });
 
