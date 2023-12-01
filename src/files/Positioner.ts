@@ -78,6 +78,14 @@ export default class Positioner {
     if (file.arch !== 'ia32' && file.arch !== 'x64') return;
     d(`Handling upload (${file.fileName}) for app (${app.slug}) and channel (${channel.name}) for version (${internalVersion.name}) on platform/arch (${file.platform}/${file.arch})`);
 
+    if (!process.env.NO_NUCLEUS_INDEX) {
+      // Insert into file index for retreival later, this is purely to avoid making assumptions
+      // about file lifetimes for all platforms or assumptions about file positions or assumptions
+      // about file names containing version strings (which are currently enforced but may not be
+      // in the future)
+      await this.store.putFile(this.getIndexKey(app, channel, internalVersion, file), fileData);
+    }
+
     switch (file.platform) {
       case 'win32':
         await this.handleWindowsUpload({ app, channel, internalVersion, file, fileData });
@@ -90,14 +98,6 @@ export default class Positioner {
         break;
       default:
         return;
-    }
-
-    if (!process.env.NO_NUCLEUS_INDEX) {
-      // Insert into file index for retreival later, this is purely to avoid making assumptions
-      // about file lifetimes for all platforms or assumptions about file positions or assumptions
-      // about file names containing version strings (which are currently enforced but may not be
-      // in the future)
-      await this.store.putFile(this.getIndexKey(app, channel, internalVersion, file), fileData);
     }
   }
 

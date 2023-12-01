@@ -326,8 +326,8 @@
   resolved "https://registry.yarnpkg.com/@navjobs/upload/-/upload-3.1.3.tgz#ea1160016b96b6a5e7139091fc7b53dcb4bbc6d4"
 
 "@types/bluebird@*":
-  version "3.5.18"
-  resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.18.tgz#6a60435d4663e290f3709898a4f75014f279c4d6"
+  version "3.5.24"
+  resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.24.tgz#11f76812531c14f793b8ecbf1de96f672905de8a"
 
 "@types/bluebird@3.5.4":
   version "3.5.4"
@@ -410,8 +410,8 @@
   resolved "https://registry.yarnpkg.com/@types/history/-/history-2.0.49.tgz#5f626148a0de1e4eb334e66076d15c1a53aa45e2"
 
 "@types/lodash@*":
-  version "4.14.82"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.82.tgz#18948897f415ef199a93156a66ef7ce1d0d005b9"
+  version "4.14.117"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.117.tgz#695a7f514182771a1e0f4345d189052ee33c8778"
 
 "@types/mime@*":
   version "2.0.0"
@@ -439,7 +439,7 @@
 
 "@types/node@6.0.41":
   version "6.0.41"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-6.0.41.tgz#578cf53aaec65887bcaf16792f8722932e8ff8ea"
+  resolved "http://registry.npmjs.org/@types/node/-/node-6.0.41.tgz#578cf53aaec65887bcaf16792f8722932e8ff8ea"
 
 "@types/node@^7.0.22":
   version "7.0.46"
@@ -544,8 +544,8 @@
     "@types/node" "*"
 
 "@types/validator@*":
-  version "6.3.0"
-  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-6.3.0.tgz#d7454bd67c6a933a9dbe939ae16edbf0f6894e70"
+  version "9.4.2"
+  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-9.4.2.tgz#9fec264b35f0ea21d0967eeec2dcd6a798b34350"
 
 "@types/webpack-env@^1.13.0":
   version "1.13.2"
@@ -7889,9 +7889,9 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
 
-typescript@^2.3.3:
-  version "2.6.1"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.6.1.tgz#ef39cdea27abac0b500242d6726ab90e0c846631"
+typescript@^3.1.6:
+  version "3.1.6"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.1.6.tgz#b6543a83cfc8c2befb3f4c8fba6896f5b0c9be68"
 
 ua-parser-js@^0.7.9:
   version "0.7.17"
